@@ -2,8 +2,10 @@
 # config.example.yaml  ->  copie para config.yaml e edite
 #
 # Sites já preenchidos: imobiliárias do LITORAL SUL de SP
-# (Guarujá, Mongaguá, Itanhaém, Peruíbe). Pesquisados em set/2026 -
-# confira os seletores com F12 antes de confiar (layout muda).
+# (Guarujá, Mongaguá, Itanhaém, Peruíbe) + BAIRROS NOBRES / ALTO PADRÃO
+# (Jardim Acapulco, Praia do Pernambuco, Riviera de São Lourenço).
+# Pesquisados em set/2026 - confira os seletores com F12 antes de
+# confiar (layout muda).
 # ==========================================================================
 
 telegram:
@@ -24,6 +26,9 @@ analise:
   limiar_desconto: 0.30      # 0.30 = alerta quem está 30%+ abaixo da mediana do grupo
   exigir_keyword: false      # true = só alerta barato QUE TAMBÉM tenha palavra-chave
                              # (comece com false p/ calibrar, depois avalie true)
+  preco_min: 50000           # ignora anúncio com preço abaixo disso (parse errado)
+  preco_m2_min: 300          # piso de sanidade p/ preço/m²
+  preco_m2_max: 60000        # teto de sanidade p/ preço/m² (litoral: ~2k a 25k)
 
 agendamento:
   intervalo_minutos: 180     # de quanto em quanto tempo revarre (modo loop)
@@ -164,3 +169,99 @@ sites:
       area: ""
       quartos: ""
       bairro: ""
+
+  # ==========================================================================
+  # BAIRROS NOBRES / ALTO PADRÃO
+  # Jardim Acapulco e Praia do Pernambuco (Guarujá), Riviera de São Lourenço.
+  # Preços de milhões: o "abaixo da mediana" aqui costuma ser espólio,
+  # permuta ou reforma pesada - exatamente o alvo do bot.
+  # ==========================================================================
+
+  - nome: "Susana Amorim - Jd Acapulco (alto padrao)"
+    ativo: true
+    base_url: "https://susanaamorimimoveis.com.br"
+    listagem_url: "https://susanaamorimimoveis.com.br/imoveis/a-venda/guaruja-sp/jardim-acapulco?pagina={page}"
+    cidade: "Guaruja"
+    tipo_padrao: ""
+    paginas: 3
+    # plataforma: Praedium CRM - mesmos seletores da Angelo Imoveis
+    seletores:
+      card: "div.thumbnail_one"
+      link: "a.property-card-link"
+      titulo: "h2.property_card_heading"
+      descricao: ""
+      preco: "div.property_pricing"
+      area: ""
+      quartos: ""
+      bairro: "span.property_card_address"
+
+  - nome: "7 Praias - Jd Acapulco (alto padrao)"
+    ativo: true
+    base_url: "https://www.setepraiasimobiliaria.com.br"
+    listagem_url: "https://www.setepraiasimobiliaria.com.br/imoveis/a-venda/guaruja/jardim-acapulco?pagina={page}"
+    cidade: "Guaruja"
+    tipo_padrao: ""
+    paginas: 3
+    # plataforma: Kenlo (ex-Ingaia). O card É um <a> (link no proprio card).
+    seletores:
+      card: "a.card-with-buttons"
+      link: "a"                      # ignorado: scraper usa o href do proprio card
+      titulo: ""
+      descricao: ""
+      preco: ""                      # tudo por fallback no texto do card
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  - nome: "Rocha Imoveis - Guaruja (alto padrao)"
+    ativo: true
+    base_url: "https://www.rochaimoveisguaruja.com.br"
+    listagem_url: "https://www.rochaimoveisguaruja.com.br/imoveis/a-venda/casa/guaruja/jardim-acapulco?pagina={page}"
+    cidade: "Guaruja"
+    tipo_padrao: "casa"
+    paginas: 3
+    # plataforma: Kenlo - idem 7 Praias
+    seletores:
+      card: "a.card-with-buttons"
+      link: "a"
+      titulo: ""
+      descricao: ""
+      preco: ""
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  - nome: "M&M Riviera - Riviera de Sao Lourenco"
+    ativo: true
+    base_url: "https://mmrivieraimoveis.com.br"
+    listagem_url: "https://mmrivieraimoveis.com.br/buscar/comprar/todos/todas-cidades/todos-bairros"
+    cidade: "Bertioga"
+    tipo_padrao: ""
+    paginas: 1                       # mesma limitacao de paginacao da Paulumar
+    # plataforma: Microsistec v8 (imob.online) - mesmos seletores da Paulumar
+    seletores:
+      card: "div.property-item"
+      link: "a"
+      titulo: "h2"
+      descricao: ""
+      preco: ""
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  - nome: "Anelio Imoveis - Guaruja (condominios)"
+    ativo: false                    # plataforma Union/Tokko: card sem <a href>
+    base_url: "https://anelioimoveis.com.br"        # (so id numerico). Mesmo caso
+    listagem_url: "https://anelioimoveis.com.br/comprar"   # da Mage Imoveis.
+    cidade: "Guaruja"
+    tipo_padrao: ""
+    paginas: 3
+    seletores:
+      card: "div.resultado"
+      link: "a"
+      titulo: "h3.tipo"
+      descricao: "div.descricao span"
+      preco: "div.valor h5"
+      area: "div.detalhe span"
+      quartos: ""
+      bairro: "h4.localizacao span"

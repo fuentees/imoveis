@@ -39,6 +39,9 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None):
         min_amostra=a.get("min_amostra", 4),
         limiar_desconto=a.get("limiar_desconto", 0.30),
         exigir_keyword=a.get("exigir_keyword", False),
+        preco_min=a.get("preco_min", 50_000),
+        preco_m2_min=a.get("preco_m2_min", 300),
+        preco_m2_max=a.get("preco_m2_max", 60_000),
     )
     print(f"Oportunidades detectadas: {len(ops)}")
 

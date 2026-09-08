@@ -73,6 +73,12 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
         for card in cards:
             link_node = card.select_one(sel.get("link", "a"))
             href = link_node.get("href") if link_node else None
+            # alguns layouts (ex.: Kenlo) fazem o próprio card ser um <a>;
+            # select_one só olha descendentes, então caímos aqui.
+            if not href and card.name == "a":
+                href = card.get("href")
+            if not href:
+                href = card.get("data-href") or card.get("data-url")
             link = urljoin(base, href) if href else None
             if not link:
                 continue

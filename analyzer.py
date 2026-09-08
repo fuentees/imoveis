@@ -17,14 +17,15 @@ from typing import Optional
 from parser import normalizar_texto
 
 # Palavras que indicam venda urgente / espólio. Ajuste à vontade.
+# Retiradas as fracas ("oportunidade", "financia", "abaixo do valor"...):
+# apareciam em ~90% dos anúncios (é jargão de corretor) e só geravam ruído.
 PALAVRAS_CHAVE = [
     "espolio", "inventario", "herdeiros", "heranca", "partilha",
     "urgente", "abaixo da avaliacao", "abaixo do mercado",
     "aceito proposta", "aceita proposta", "aceito oferta",
     "motivo mudanca", "mudanca de cidade", "mudanca de pais",
     "precisa vender", "preciso vender", "vende-se rapido", "venda rapida",
-    "desocupado", "documentacao ok", "escritura ok", "quitado",
-    "oportunidade", "abaixo do valor", "financia", "aceita financiamento",
+    "desocupado", "documentacao ok", "escritura ok",
 ]
 
 
@@ -58,11 +59,15 @@ class Imovel:
 def _faixa_metragem(area: Optional[float]) -> str:
     if area is None:
         return "area_?"
+    # bandas até 350 pra imóvel comum; acima disso pra alto padrão
+    # (Jardim Acapulco/Riviera tem casa de 400 a 900+ m² - sem essas
+    # faixas tudo cai no mesmo balde e a mediana perde o sentido).
     for lim, nome in [(50, "0-50"), (80, "50-80"), (120, "80-120"),
-                      (200, "120-200"), (350, "200-350")]:
+                      (200, "120-200"), (350, "200-350"), (500, "350-500"),
+                      (800, "500-800"), (1200, "800-1200")]:
         if area < lim:
             return nome
-    return "350+"
+    return "1200+"
 
 
 def _faixa_quartos(q: Optional[int]) -> str:
@@ -88,21 +93,29 @@ def detectar_keywords(im: Imovel) -> list:
     return [kw for kw in PALAVRAS_CHAVE if kw in texto]
 
 
-def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False):
+def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
+             preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000):
     """
     min_amostra: mínimo de comparáveis no grupo para confiar na mediana.
     limiar_desconto: % abaixo da mediana para virar candidato (0.30 = 30%).
     exigir_keyword: se True, só alerta imóvel barato QUE TAMBÉM tem palavra-chave.
                     Reduz muito o ruído; deixe False no começo para calibrar.
+    preco_min / preco_m2_min / preco_m2_max: piso e teto de sanidade. Descarta
+                    parse errado (ex.: pegou IPTU "R$ 1.300" no lugar do preço,
+                    ou m² absurdo) antes que vire um alerta "100% abaixo".
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
     """
-    # 1. preço/m² individual
+    # 1. preço/m² individual (com filtro de sanidade)
     validos = []
     for im in imoveis:
-        if im.preco and im.area and im.area > 0:
-            im.preco_m2 = im.preco / im.area
-            im.grupo = chave_grupo(im)
-            validos.append(im)
+        if not (im.preco and im.area and im.area > 0):
+            continue
+        pm2 = im.preco / im.area
+        if im.preco < preco_min or pm2 < preco_m2_min or pm2 > preco_m2_max:
+            continue  # dado implausível -> fora
+        im.preco_m2 = pm2
+        im.grupo = chave_grupo(im)
+        validos.append(im)
 
     # 2. mediana por grupo
     grupos = {}
