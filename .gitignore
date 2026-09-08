@@ -1,0 +1,17 @@
+# configuração com credenciais
+config.yaml
+
+# banco de dados local
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# editores / SO
+.DS_Store
+.idea/
+.vscode/

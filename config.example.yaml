@@ -1,0 +1,63 @@
+# ==========================================================================
+# config.example.yaml  ->  copie para config.yaml e edite
+# ==========================================================================
+
+telegram:
+  # Deixe em branco aqui e use variáveis de ambiente (recomendado):
+  #   export TELEGRAM_TOKEN="123:ABC..."
+  #   export TELEGRAM_CHAT_ID="12345678"
+  token: ""
+  chat_id: ""
+
+scraper:
+  delay_segundos: 2.5        # pausa entre requisições (seja educado)
+
+analise:
+  min_amostra: 4             # mínimo de comparáveis no grupo p/ confiar na mediana
+  limiar_desconto: 0.30      # 0.30 = alerta quem está 30%+ abaixo da mediana do grupo
+  exigir_keyword: false      # true = só alerta barato QUE TAMBÉM tenha palavra-chave
+                             # (comece com false p/ calibrar, depois avalie true)
+
+agendamento:
+  intervalo_minutos: 180     # de quanto em quanto tempo revarre (modo loop)
+
+# --------------------------------------------------------------------------
+# SITES: uma entrada por imobiliária.
+# Para descobrir os seletores: abra o site, F12 (inspecionar), ache o "card"
+# de cada anúncio na listagem e os elementos internos.
+# Os campos podem ficar vazios; o bot tenta extrair do texto do card como fallback.
+# --------------------------------------------------------------------------
+sites:
+  - nome: "Imobiliaria Exemplo 1"
+    ativo: true
+    base_url: "https://www.imobiliaria-exemplo1.com.br"
+    listagem_url: "https://www.imobiliaria-exemplo1.com.br/venda/apartamentos?pagina={page}"
+    cidade: "Ribeirao Preto"
+    tipo_padrao: "apartamento"
+    paginas: 5                       # quantas páginas percorrer
+    seletores:
+      card: "div.card-imovel"        # o container de CADA anúncio
+      link: "a.card-link"
+      titulo: "h2.titulo"
+      descricao: "p.descricao"
+      preco: "span.preco"
+      area: "span.area"
+      quartos: "span.quartos"
+      bairro: "span.bairro"
+
+  - nome: "Imobiliaria Exemplo 2"
+    ativo: false                     # desligada por enquanto
+    base_url: "https://www.imobiliaria-exemplo2.com.br"
+    listagem_url: "https://www.imobiliaria-exemplo2.com.br/imoveis/venda/casas/pagina/{page}"
+    cidade: "Ribeirao Preto"
+    tipo_padrao: "casa"
+    paginas: 3
+    seletores:
+      card: "article.property"
+      link: "a"
+      titulo: ".property-title"
+      descricao: ".property-desc"
+      preco: ".price"
+      area: ".feature-area"
+      quartos: ".feature-beds"
+      bairro: ".property-location"
