@@ -9,6 +9,7 @@ respeita um limite de páginas. Ajuste no config.
 """
 import time
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from analyzer import Imovel
@@ -29,13 +30,15 @@ def _selec(card, seletor):
     return _texto(node)
 
 
-def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None):
+def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
+                verify_ssl=True):
     """
     site_cfg: dict do config.yaml para UMA imobiliária.
     Retorna lista de Imovel (ainda sem análise).
     """
     sess = session or requests.Session()
     sess.headers.update({"User-Agent": site_cfg.get("user_agent", DEFAULT_UA)})
+    verify_ssl = site_cfg.get("verificar_ssl", verify_ssl)
 
     nome = site_cfg["nome"]
     base = site_cfg["base_url"]
@@ -51,7 +54,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None)
     for p in range(1, paginas + 1):
         url = url_tmpl.format(page=p) if "{page}" in url_tmpl else url_tmpl
         try:
-            r = sess.get(url, timeout=timeout)
+            r = sess.get(url, timeout=timeout, verify=verify_ssl)
             r.raise_for_status()
             # evita mojibake (ex.: "m²" virar "mÂ²"): usa o encoding detectado
             # quando o servidor não declara charset no header.
@@ -111,14 +114,21 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None)
 def raspar_todos(config, max_paginas=None):
     """Percorre todas as imobiliárias ativas do config."""
     todos = []
-    delay = config.get("scraper", {}).get("delay_segundos", 2.0)
+    scfg = config.get("scraper", {})
+    delay = scfg.get("delay_segundos", 2.0)
+    # em rede com proxy que intercepta TLS (certificado próprio), o requests
+    # rejeita a conexão. verificar_ssl: false desliga a checagem (por site ou global).
+    verify_ssl = scfg.get("verificar_ssl", True)
+    if not verify_ssl:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     sess = requests.Session()
     for site in config.get("sites", []):
         if not site.get("ativo", True):
             continue
         print(f"> Raspando: {site['nome']}")
         try:
-            todos.extend(raspar_site(site, delay=delay, max_paginas=max_paginas, session=sess))
+            todos.extend(raspar_site(site, delay=delay, max_paginas=max_paginas,
+                                     session=sess, verify_ssl=verify_ssl))
         except Exception as e:
             print(f"  [!] falha geral em {site['nome']}: {e}")
     return todos

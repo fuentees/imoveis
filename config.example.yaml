@@ -1,5 +1,9 @@
 # ==========================================================================
 # config.example.yaml  ->  copie para config.yaml e edite
+#
+# Sites já preenchidos: imobiliárias do LITORAL SUL de SP
+# (Guarujá, Mongaguá, Itanhaém, Peruíbe). Pesquisados em set/2026 -
+# confira os seletores com F12 antes de confiar (layout muda).
 # ==========================================================================
 
 telegram:
@@ -11,6 +15,9 @@ telegram:
 
 scraper:
   delay_segundos: 2.5        # pausa entre requisições (seja educado)
+  verificar_ssl: true        # ponha false se estiver atrás de proxy corporativo
+                             # que intercepta HTTPS (erro CERTIFICATE_VERIFY_FAILED).
+                             # Pode ser definido por site também: "verificar_ssl: false".
 
 analise:
   min_amostra: 4             # mínimo de comparáveis no grupo p/ confiar na mediana
@@ -23,41 +30,137 @@ agendamento:
 
 # --------------------------------------------------------------------------
 # SITES: uma entrada por imobiliária.
-# Para descobrir os seletores: abra o site, F12 (inspecionar), ache o "card"
-# de cada anúncio na listagem e os elementos internos.
-# Os campos podem ficar vazios; o bot tenta extrair do texto do card como fallback.
+# Para descobrir/corrigir os seletores: abra o site, F12 (inspecionar), ache
+# o "card" de cada anúncio na listagem e os elementos internos.
+# Campos vazios: o bot tenta extrair do texto do card como fallback.
 # --------------------------------------------------------------------------
 sites:
-  - nome: "Imobiliaria Exemplo 1"
-    ativo: true
-    base_url: "https://www.imobiliaria-exemplo1.com.br"
-    listagem_url: "https://www.imobiliaria-exemplo1.com.br/venda/apartamentos?pagina={page}"
-    cidade: "Ribeirao Preto"
-    tipo_padrao: "apartamento"
-    paginas: 5                       # quantas páginas percorrer
-    seletores:
-      card: "div.card-imovel"        # o container de CADA anúncio
-      link: "a.card-link"
-      titulo: "h2.titulo"
-      descricao: "p.descricao"
-      preco: "span.preco"
-      area: "span.area"
-      quartos: "span.quartos"
-      bairro: "span.bairro"
 
-  - nome: "Imobiliaria Exemplo 2"
-    ativo: false                     # desligada por enquanto
-    base_url: "https://www.imobiliaria-exemplo2.com.br"
-    listagem_url: "https://www.imobiliaria-exemplo2.com.br/imoveis/venda/casas/pagina/{page}"
-    cidade: "Ribeirao Preto"
-    tipo_padrao: "casa"
+  # ---------- PERUÍBE ----------
+  - nome: "Angelo Imoveis - Peruibe"
+    ativo: true
+    base_url: "https://angeloimoveisperuibe.com.br"
+    listagem_url: "https://angeloimoveisperuibe.com.br/imoveis/a-venda/peruibe-sp?pagina={page}"
+    cidade: "Peruibe"
+    tipo_padrao: ""                 # a listagem mistura casa/apto/terreno
+    paginas: 4
+    # plataforma: Praedium CRM (mesmo template usado por muitas imobiliárias BR)
+    seletores:
+      card: "div.thumbnail_one"
+      link: "a.property-card-link"
+      titulo: "h2.property_card_heading"
+      descricao: ""
+      preco: "div.property_pricing"
+      area: ""                      # sem seletor limpo -> fallback pega "1070 M²"
+      quartos: ""                   # idem, fallback
+      bairro: "span.property_card_address"
+
+  # ---------- MONGAGUÁ / ITANHAÉM ----------
+  - nome: "Paulumar Imoveis - Mongagua/Itanhaem"
+    ativo: true
+    base_url: "https://paulumar.com.br"
+    listagem_url: "https://paulumar.com.br/buscar/comprar/apartamento/todas-cidades/todos-bairros?negotiation=1&type=1"
+    cidade: "Mongagua"             # listagem mistura Mongaguá e Itanhaém (ver ressalva)
+    tipo_padrao: "apartamento"
+    paginas: 1                     # pág. 2+ é "&page=2" (mas "&page=1" dá 404);
+                                   # o scraper genérico começa na 1, então fica só a 1ª.
+    # plataforma: Microsistec "Motor Imobiliario v8" (Next.js, SSR)
+    seletores:
+      card: "div.property-item"
+      link: "a"
+      titulo: "h2.line-clamp-2"
+      descricao: ""
+      preco: ""                     # sem classes semânticas -> tudo por fallback
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  - nome: "Imobiliaria do Julio - Mongagua/Itanhaem"
+    ativo: false                    # site em React/MUI: classes dinâmicas (jss123)
+    base_url: "https://www.imobiliariadojulio.com.br"     # quebram a cada build.
+    listagem_url: "https://www.imobiliariadojulio.com.br/buscar/mongagua-sao-paulo-brasil"
+    cidade: "Mongagua"
+    tipo_padrao: ""
+    paginas: 1
+    # plataforma: Flip CRM. Pra ativar, inspecione e ache um seletor estável
+    # (data-* ou o padrão de href "/imoveis/...-CA12577").
+    seletores:
+      card: "div.MuiCard-root"
+      link: "a"
+      titulo: ""
+      descricao: ""
+      preco: ""
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  # ---------- ITANHAÉM ----------
+  - nome: "Edson Imoveis - Itanhaem"
+    ativo: true
+    base_url: "https://www.edsonimoveis.com.br"
+    listagem_url: "https://www.edsonimoveis.com.br/"   # /imoveis exige querystring;
+    cidade: "Itanhaem"                                 # home traz ~10 cards.
+    tipo_padrao: ""
+    paginas: 1
+    seletores:
+      card: "div.property"
+      link: "a"
+      titulo: "div.info h3"
+      descricao: ""
+      preco: "div.tag.price"
+      area: "ul.additional-info li:nth-of-type(1) figure"
+      quartos: "ul.additional-info li:nth-of-type(2) figure"
+      bairro: "div.info figure"
+
+  - nome: "Imoveis Nobre - Itanhaem"
+    ativo: false                    # confirme o seletor do card na página /venda
+    base_url: "https://www.imoveisnobre.com.br"
+    listagem_url: "https://www.imoveisnobre.com.br/venda/apartamento?pagina={page}"
+    cidade: "Itanhaem"
+    tipo_padrao: "apartamento"
     paginas: 3
     seletores:
-      card: "article.property"
+      card: ""                      # TODO: F12 na listagem (home só tem card-bairros)
       link: "a"
-      titulo: ".property-title"
-      descricao: ".property-desc"
-      preco: ".price"
-      area: ".feature-area"
-      quartos: ".feature-beds"
-      bairro: ".property-location"
+      titulo: ""
+      descricao: ""
+      preco: ""
+      area: ""
+      quartos: ""
+      bairro: ""
+
+  # ---------- GUARUJÁ ----------
+  - nome: "Mage Imoveis - Guaruja"
+    ativo: false                    # card tem todos os dados MAS não tem <a href>
+    base_url: "https://www.mageimoveis.com.br"        # (navegação por JS). Precisa
+    listagem_url: "https://www.mageimoveis.com.br/comprar/pagina-{page}/"   # de um
+    cidade: "Guaruja"               # ajuste no scraper pra montar a URL do imóvel
+    tipo_padrao: ""                 # a partir do id do card (div.resultado[id]).
+    paginas: 3
+    # plataforma: Agiliza Union Web
+    seletores:
+      card: "div.resultado"
+      link: "a"
+      titulo: "h3.tipo"
+      descricao: "div.descricao span"
+      preco: "div.valor h5"
+      area: "div.detalhe span"
+      quartos: ""
+      bairro: "h4.localizacao span"
+
+  - nome: "Imobiliaria Praias - Guaruja/Riviera"
+    ativo: false                    # portal em Vista/Ingaia: listagem via JS (SPA).
+    base_url: "https://praias.com"                    # Precisa de navegador headless
+    listagem_url: "https://praias.com/busca"          # (Playwright) ou a API interna.
+    cidade: "Guaruja"
+    tipo_padrao: ""
+    paginas: 1
+    seletores:
+      card: ""
+      link: "a"
+      titulo: ""
+      descricao: ""
+      preco: ""
+      area: ""
+      quartos: ""
+      bairro: ""
