@@ -14,7 +14,7 @@ Lógica:
 """
 import re
 from dataclasses import dataclass, field
-from statistics import median
+from statistics import median, quantiles
 from typing import Optional
 from parser import normalizar_texto
 
@@ -69,7 +69,9 @@ class Imovel:
     # calculados
     preco_m2: Optional[float] = field(default=None)
     grupo: str = field(default="")
-    mediana_grupo: Optional[float] = field(default=None)
+    mediana_grupo: Optional[float] = field(default=None)   # mediana APARADA do grupo
+    faixa_lo: Optional[float] = field(default=None)        # p25 do preço/m² do grupo
+    faixa_hi: Optional[float] = field(default=None)        # p75
     n_grupo: int = field(default=0)
     pct_abaixo: float = field(default=0.0)     # 0.35 = 35% abaixo da mediana
     criterio: str = field(default="")          # base de comparação, em texto
@@ -168,6 +170,23 @@ def _dedupe(imoveis):
     return saida
 
 
+def _baseline(pm2s):
+    """
+    Preço/m² de referência do grupo, robusto a anúncio mal-precificado:
+      - ponto: mediana APARADA (descarta 10% de cada ponta quando n >= 10);
+      - faixa: p25 e p75 (quando n >= 4), pra mostrar a dispersão real.
+    """
+    xs = sorted(pm2s)
+    n = len(xs)
+    k = n // 10 if n >= 10 else 0
+    ponto = median(xs[k:n - k] if k else xs)
+    lo = hi = None
+    if n >= 4:
+        q = quantiles(xs, n=4)          # [p25, p50, p75]
+        lo, hi = q[0], q[2]
+    return ponto, lo, hi
+
+
 def _comparaveis(im: Imovel, pool):
     """
     Do mesmo grupo, filtra por área dentro de ±_AREA_TOL e quartos com
@@ -259,7 +278,7 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
 
         barato = False
         if n >= min_amostra:
-            med = median(pm2s)
+            med, im.faixa_lo, im.faixa_hi = _baseline(pm2s)
             im.mediana_grupo = med
             if med > 0:
                 im.pct_abaixo = (med - im.preco_m2) / med

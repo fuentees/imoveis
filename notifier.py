@@ -67,60 +67,78 @@ def _confianca(n):
     if n <= 0:
         return "sem comparação de preço (poucos imóveis parecidos)"
     if n >= 15:
-        return f"{n} imóveis parecidos na base — confiança boa"
+        return f"confiança boa ({n} comparáveis)"
     if n >= 8:
-        return f"{n} imóveis parecidos — confiança razoável"
-    return f"só {n} imóveis parecidos — amostra pequena, confirme com calma"
+        return f"confiança razoável ({n} comparáveis)"
+    return f"amostra pequena — só {n} comparáveis, confirme com calma"
+
+
+def _faixa(lo, hi):
+    """(7000, 9500) -> 'R$ 7.000–9.500/m²'."""
+    if not (lo and hi):
+        return ""
+    ini = _reais(lo)
+    fim = _reais(hi).replace("R$ ", "")
+    return f"{ini}–{fim}/m²"
 
 
 def formatar_alerta(im) -> str:
     """
-    Monta a mensagem do Telegram (HTML). Objetivo: dá pra entender em 5 segundos
-    POR QUE isso é um alerta, quão confiável é, e o que ainda falta checar.
+    Mensagem do Telegram (HTML). A DIFERENÇA DE VALOR é a manchete (primeira
+    linha, em destaque); o resto — imóvel, specs, confiança, ressalva — vem
+    embaixo. Dá pra decidir "abro ou não" só pela primeira linha.
     """
     E = html.escape
     tipo = (im.tipo or "Imóvel").capitalize()
     local = ", ".join(p for p in (im.bairro, im.cidade) if p) or "local não identificado"
+    L = []
 
-    L = [f"🏠 <b>{E(tipo)} · {E(local)}</b>"]
-    if im.titulo and im.titulo.strip().lower() not in (tipo.lower(), local.lower()):
-        L.append(f"<i>{E(im.titulo[:90])}</i>")
+    # ---- MANCHETE: a diferença ----
+    tem_gap = bool(im.mediana_grupo) and im.pct_abaixo > 0
+    if tem_gap:
+        econ = (im.mediana_grupo - im.preco_m2) * (im.area or 0)
+        cabeca = f"🔻 <b>{im.pct_abaixo * 100:.0f}% ABAIXO</b> do preço/m² típico"
+        if econ > 0:
+            cabeca += f"  ·  ≈ <b>{_reais(econ)}</b> mais barato"
+        L.append(cabeca)
+        faixa = _faixa(im.faixa_lo, im.faixa_hi)
+        alvo = f"típico {faixa}" if faixa else f"típico ~{_reais(im.mediana_grupo)}/m²"
+        L.append(f"    este imóvel: <b>{_reais(im.preco_m2)}/m²</b>   |   {alvo}")
+        if im.criterio:
+            L.append(f"    base: {im.n_grupo} imóveis parecidos — <i>{E(im.criterio)}</i>")
+        if im.pct_abaixo >= 0.45:
+            L.append("    ⚑ <b>gap grande</b>: provável reforma pesada / permuta / "
+                     "terreno — não conte com \"pronto pra morar\"")
+    elif im.keywords:
+        legiveis = ", ".join(_KW_LEGIVEL.get(k, k) for k in im.keywords)
+        L.append(f"🔑 <b>SINAIS DE VENDA RÁPIDA</b>: {E(legiveis)}")
+        L.append(f"    preço não comparável ({_confianca(im.n_grupo)})")
     L.append("")
 
-    # specs
-    specs = [f"<b>{_reais(im.preco)}</b>"]
+    # ---- o imóvel ----
+    L.append(f"🏠 <b>{E(tipo)} · {E(local)}</b>  —  <b>{_reais(im.preco)}</b>")
+    specs = []
     if im.area:
         specs.append(f"{im.area:.0f} m²")
     if im.quartos:
         specs.append(f"{im.quartos} quartos")
     if im.vagas:
         specs.append(f"{im.vagas} vagas")
-    L.append("   ·   ".join(specs))
     if im.preco_m2:
-        L.append(f"📐 {_reais(im.preco_m2)}/m²")
-    L.append("")
-
-    # por que virou alerta
-    if im.mediana_grupo and im.pct_abaixo > 0:
-        L.append(f"📉 <b>{im.pct_abaixo * 100:.0f}% abaixo</b> do preço/m² típico da região")
-        L.append(f"    este: {_reais(im.preco_m2)}/m²   ·   típico: ~{_reais(im.mediana_grupo)}/m²")
-        econ = (im.mediana_grupo - im.preco_m2) * (im.area or 0)
-        if econ > 0:
-            L.append(f"    ≈ {_reais(econ)} mais barato que o típico de imóveis parecidos")
-        if im.criterio:
-            L.append(f"    <i>base de comparação: {E(im.criterio)}</i>")
-    elif im.keywords:
-        L.append("📉 Não está claramente abaixo do mercado — "
-                 "entrou pelos <b>sinais de venda abaixo</b>.")
-    L.append("")
-
-    if im.keywords:
+        specs.append(f"{_reais(im.preco_m2)}/m²")
+    if specs:
+        L.append("   " + "  ·  ".join(specs))
+    if im.titulo and im.titulo.strip().lower() not in (tipo.lower(), local.lower()):
+        L.append(f"   <i>{E(im.titulo[:90])}</i>")
+    if tem_gap and im.keywords:
         legiveis = ", ".join(_KW_LEGIVEL.get(k, k) for k in im.keywords)
-        L.append(f"🔑 <b>Sinais de venda rápida:</b> {E(legiveis)}")
-        L.append("")
+        L.append(f"   🔑 ainda: {E(legiveis)}")
+    L.append("")
 
+    # ---- rodapé ----
     L.append(f"📊 {_confianca(im.n_grupo)}  ·  relevância {im.score:.0f}")
-    L.append("⚠️ Preço de <i>anúncio</i>, não de venda. O bot só encurta a busca — confirme visitando.")
+    L.append("⚠️ Preço de <i>anúncio</i>, não de venda. A base também é de anúncios "
+             "(pedidos, inflados) — o gap real tende a ser menor. Confirme visitando.")
     L.append("")
     L.append(f"🔗 {E(im.url)}")
     L.append(f"<i>fonte: {E(im.fonte)}</i>")
