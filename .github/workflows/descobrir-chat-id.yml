@@ -1,0 +1,26 @@
+name: descobrir-chat-id
+
+# Roda só quando você aperta o botão. Usa o secret TELEGRAM_TOKEN pra
+# listar os chats que o bot enxerga e imprimir o TELEGRAM_CHAT_ID.
+#
+# Passos:
+#  1. bot é ADMIN do canal/grupo;
+#  2. publique uma mensagem nova nesse canal/grupo;
+#  3. Actions -> "descobrir-chat-id" -> Run workflow;
+#  4. abra o run -> step "Descobrir" -> copie o número.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  descobrir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Descobrir
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        run: python tools/telegram_chat_id.py
