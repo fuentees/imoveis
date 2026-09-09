@@ -50,21 +50,27 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None):
         if im.preco_m2:
             storage.upsert_imovel(im)
 
-    novos = 0
+    novos = enviados = falhas = 0
     for im in ops:
         if storage.ja_alertado(im.url):
             continue
+        novos += 1
         msg = formatar_alerta(im)
         if dry_run:
             print("\n--- (dry-run, não enviado) ---")
             print(msg)
+            continue
+        if tg and tg.enviar(msg):
+            storage.marcar_alertado(im.url, im.score)   # só marca se enviou
+            enviados += 1
         else:
-            if tg and tg.enviar(msg):
-                storage.marcar_alertado(im.url, im.score)
-            time.sleep(1)  # respeita rate limit do Telegram
-        novos += 1
+            falhas += 1        # não marca: tenta de novo no próximo ciclo
+        time.sleep(1)          # respeita rate limit do Telegram
 
-    print(f"\nNovos alertas neste ciclo: {novos}")
+    if dry_run:
+        print(f"\nAlertas novos (dry-run): {novos}")
+    else:
+        print(f"\nAlertas novos: {novos}  |  enviados: {enviados}  |  falharam: {falhas}")
     return novos
 
 

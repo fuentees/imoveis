@@ -16,7 +16,9 @@ telegram:
   chat_id: ""
 
 scraper:
-  delay_segundos: 2.5        # pausa entre requisições (seja educado)
+  delay_segundos: 2.5        # pausa entre requisições de LISTAGEM (seja educado)
+  delay_detalhe_segundos: 1.5  # pausa entre requisições de PÁGINA DE DETALHE
+                               # (baixo demais faz o WAF de alguns sites bloquear)
   verificar_ssl: true        # ponha false se estiver atrás de proxy corporativo
                              # que intercepta HTTPS (erro CERTIFICATE_VERIFY_FAILED).
                              # Pode ser definido por site também: "verificar_ssl: false".
@@ -38,6 +40,18 @@ agendamento:
 # Para descobrir/corrigir os seletores: abra o site, F12 (inspecionar), ache
 # o "card" de cada anúncio na listagem e os elementos internos.
 # Campos vazios: o bot tenta extrair do texto do card como fallback.
+#
+# Chaves opcionais por site:
+#   detalhe: true            -> abre a página de CADA imóvel p/ pegar a área
+#                               CONSTRUÍDA (não a do terreno) e a descrição
+#                               inteira (onde aparece "espólio/inventário").
+#                               Mais lento: +1 request por anúncio.
+#   seletores.detalhe: {...} -> seletores da página de detalhe (preco/area/
+#                               descricao/bairro). Se vazio, usa o texto todo.
+#   cidade_auto: true        -> extrai a cidade do próprio anúncio (agregadores
+#                               que misturam municípios). Sobrescreve "cidade".
+#   pular_param_pagina_1:true -> quando a pág. 1 é a URL "pelada" e "&page=1"
+#                               dá 404: some com o parâmetro de página na 1ª.
 # --------------------------------------------------------------------------
 sites:
 
@@ -49,6 +63,8 @@ sites:
     cidade: "Peruibe"
     tipo_padrao: ""                 # a listagem mistura casa/apto/terreno
     paginas: 4
+    detalhe: true                  # Peruíbe = mercado comum -> vale ler a
+                                   # descrição inteira p/ pegar "espólio" etc.
     # plataforma: Praedium CRM (mesmo template usado por muitas imobiliárias BR)
     seletores:
       card: "div.thumbnail_one"
@@ -64,11 +80,12 @@ sites:
   - nome: "Paulumar Imoveis - Mongagua/Itanhaem"
     ativo: true
     base_url: "https://paulumar.com.br"
-    listagem_url: "https://paulumar.com.br/buscar/comprar/apartamento/todas-cidades/todos-bairros?negotiation=1&type=1"
-    cidade: "Mongagua"             # listagem mistura Mongaguá e Itanhaém (ver ressalva)
+    listagem_url: "https://paulumar.com.br/buscar/comprar/apartamento/todas-cidades/todos-bairros?negotiation=1&type=1&page={page}"
+    cidade: "Mongagua"
+    cidade_auto: true             # listagem mistura Mongaguá / Itanhaém / Praia Grande
+    pular_param_pagina_1: true    # "&page=1" dá 404; na 1ª página o parâmetro some
     tipo_padrao: "apartamento"
-    paginas: 1                     # pág. 2+ é "&page=2" (mas "&page=1" dá 404);
-                                   # o scraper genérico começa na 1, então fica só a 1ª.
+    paginas: 3
     # plataforma: Microsistec "Motor Imobiliario v8" (Next.js, SSR)
     seletores:
       card: "div.property-item"
@@ -184,6 +201,10 @@ sites:
     cidade: "Guaruja"
     tipo_padrao: ""
     paginas: 3
+    detalhe: false                 # a rajada de requisições de detalhe fazia o
+                                   # servidor bloquear a paginação (405). O
+                                   # parser de área já ignora "m² de terreno"
+                                   # no texto do card.
     # plataforma: Praedium CRM - mesmos seletores da Angelo Imoveis
     seletores:
       card: "div.thumbnail_one"
@@ -202,6 +223,10 @@ sites:
     cidade: "Guaruja"
     tipo_padrao: ""
     paginas: 3
+    detalhe: false                 # a pág. de detalhe do Kenlo tem "Valor do m²
+                                   # R$ X" que confunde o parser de área, e
+                                   # "partilha" no rodapé (falso positivo).
+                                   # O texto do card já traz área/preço/quartos.
     # plataforma: Kenlo (ex-Ingaia). O card É um <a> (link no proprio card).
     seletores:
       card: "a.card-with-buttons"
@@ -220,6 +245,7 @@ sites:
     cidade: "Guaruja"
     tipo_padrao: "casa"
     paginas: 3
+    detalhe: false                 # idem 7 Praias (Kenlo)
     # plataforma: Kenlo - idem 7 Praias
     seletores:
       card: "a.card-with-buttons"
@@ -234,10 +260,12 @@ sites:
   - nome: "M&M Riviera - Riviera de Sao Lourenco"
     ativo: true
     base_url: "https://mmrivieraimoveis.com.br"
-    listagem_url: "https://mmrivieraimoveis.com.br/buscar/comprar/todos/todas-cidades/todos-bairros"
+    listagem_url: "https://mmrivieraimoveis.com.br/buscar/comprar/todos/todas-cidades/todos-bairros?page={page}"
     cidade: "Bertioga"
+    cidade_auto: true
+    pular_param_pagina_1: true
     tipo_padrao: ""
-    paginas: 1                       # mesma limitacao de paginacao da Paulumar
+    paginas: 3
     # plataforma: Microsistec v8 (imob.online) - mesmos seletores da Paulumar
     seletores:
       card: "div.property-item"

@@ -93,6 +93,40 @@ def detectar_keywords(im: Imovel) -> list:
     return [kw for kw in PALAVRAS_CHAVE if kw in texto]
 
 
+def _chaves_dedupe(im: Imovel):
+    """URL + "impressão digital física" do imóvel."""
+    chaves = ["u:" + im.url.rstrip("/")]
+    if im.preco and im.area:
+        chaves.append("f:%s|%s|%d|%d|%d" % (
+            normalizar_texto(im.bairro), normalizar_texto(im.tipo),
+            round(im.preco / 1000), round(im.area), im.quartos or 0,
+        ))
+    return chaves
+
+
+def _dedupe(imoveis):
+    """
+    Colapsa o MESMO imóvel contando 2x: URL repetida (paginação) e o mesmo
+    imóvel reanunciado com outro código (mesmo bairro/tipo/preço/área/quartos).
+    Sem isso o grupo infla e sai alerta duplicado. Mantém o de descrição maior.
+    """
+    dono = {}          # chave -> índice do representante em `saida`
+    saida = []
+    for im in imoveis:
+        chaves = _chaves_dedupe(im)
+        idx = next((dono[k] for k in chaves if k in dono), None)
+        if idx is None:
+            saida.append(im)
+            for k in chaves:
+                dono[k] = len(saida) - 1
+        else:
+            if len(im.descricao or "") > len(saida[idx].descricao or ""):
+                saida[idx] = im
+            for k in chaves:            # novas chaves apontam pro mesmo dono
+                dono.setdefault(k, idx)
+    return saida
+
+
 def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
              preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000):
     """
@@ -105,6 +139,9 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
                     ou m² absurdo) antes que vire um alerta "100% abaixo".
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
     """
+    # 0. tira duplicata antes de tudo (senão infla o grupo)
+    imoveis = _dedupe(imoveis)
+
     # 1. preço/m² individual (com filtro de sanidade)
     validos = []
     for im in imoveis:
@@ -159,7 +196,8 @@ def _score(im: Imovel, barato: bool, tem_kw: bool) -> float:
     """Score simples e explicável: desconto pesa, keyword dá bônus."""
     s = 0.0
     if barato:
-        s += im.pct_abaixo * 100          # 35% abaixo -> 35 pontos
+        # teto em 60% pra um parse ainda meio torto não dominar o ranking
+        s += min(im.pct_abaixo, 0.60) * 100
     s += len(im.keywords) * 8             # cada palavra-chave -> 8 pontos
     if barato and tem_kw:
         s += 20                           # combinação dos dois é o filé

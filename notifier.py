@@ -21,11 +21,14 @@ class Telegram:
 
     def enviar(self, texto_html: str) -> bool:
         try:
-            r = requests.post(f"{self.base}/sendMessage", data={
+            # json= (não data=) pra o booleano ir como booleano de verdade;
+            # como string "false" a API tratava como "ativar" e sumia com a
+            # prévia do link (a foto do imóvel).
+            r = requests.post(f"{self.base}/sendMessage", json={
                 "chat_id": self.chat_id,
                 "text": texto_html,
                 "parse_mode": "HTML",
-                "disable_web_page_preview": "false",
+                "disable_web_page_preview": False,
             }, timeout=20)
             if r.status_code != 200:
                 print(f"  [!] Telegram respondeu {r.status_code}: {r.text[:200]}")
