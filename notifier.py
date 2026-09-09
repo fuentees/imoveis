@@ -42,23 +42,86 @@ class Telegram:
             return False
 
 
-def formatar_alerta(im) -> str:
-    """Monta a mensagem de um imóvel. Usa HTML simples suportado pelo Telegram."""
-    def fmt_reais(v):
-        return f"R$ {v:,.0f}".replace(",", ".") if v else "—"
+# palavra-chave normalizada -> forma legível (com acento) pro alerta
+_KW_LEGIVEL = {
+    "espolio": "espólio", "inventario": "inventário", "heranca": "herança",
+    "aceito proposta": "aceita proposta", "aceita proposta": "aceita proposta",
+    "aceito oferta": "aceita oferta",
+    "abaixo da avaliacao": "abaixo da avaliação",
+    "motivo mudanca": "mudança", "mudanca de cidade": "mudança de cidade",
+    "mudanca de pais": "mudança de país",
+    "preciso vender": "precisa vender", "vende-se rapido": "venda rápida",
+    "venda rapida": "venda rápida", "documentacao ok": "documentação ok",
+}
 
-    linhas = []
-    linhas.append(f"🏠 <b>{html.escape(im.titulo[:90])}</b>")
-    linhas.append(f"📍 {html.escape(im.bairro or '?')}, {html.escape(im.cidade or '?')}")
-    linhas.append(f"💰 <b>{fmt_reais(im.preco)}</b>  •  {im.area:.0f} m²  •  {im.quartos or '?'} quartos"
-                  if im.area else f"💰 <b>{fmt_reais(im.preco)}</b>")
+
+def _reais(v, casas=0):
+    """1600000 -> 'R$ 1.600.000' (formato brasileiro)."""
+    if not v:
+        return "—"
+    s = f"{v:,.{casas}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {s}"
+
+
+def _confianca(n):
+    if n <= 0:
+        return "sem comparação de preço (poucos imóveis parecidos)"
+    if n >= 15:
+        return f"{n} imóveis parecidos na base — confiança boa"
+    if n >= 8:
+        return f"{n} imóveis parecidos — confiança razoável"
+    return f"só {n} imóveis parecidos — amostra pequena, confirme com calma"
+
+
+def formatar_alerta(im) -> str:
+    """
+    Monta a mensagem do Telegram (HTML). Objetivo: dá pra entender em 5 segundos
+    POR QUE isso é um alerta, quão confiável é, e o que ainda falta checar.
+    """
+    E = html.escape
+    tipo = (im.tipo or "Imóvel").capitalize()
+    local = ", ".join(p for p in (im.bairro, im.cidade) if p) or "local não identificado"
+
+    L = [f"🏠 <b>{E(tipo)} · {E(local)}</b>"]
+    if im.titulo and im.titulo.strip().lower() not in (tipo.lower(), local.lower()):
+        L.append(f"<i>{E(im.titulo[:90])}</i>")
+    L.append("")
+
+    # specs
+    specs = [f"<b>{_reais(im.preco)}</b>"]
+    if im.area:
+        specs.append(f"{im.area:.0f} m²")
+    if im.quartos:
+        specs.append(f"{im.quartos} quartos")
+    if im.vagas:
+        specs.append(f"{im.vagas} vagas")
+    L.append("   ·   ".join(specs))
     if im.preco_m2:
-        linhas.append(f"📐 {fmt_reais(im.preco_m2)}/m²")
+        L.append(f"📐 {_reais(im.preco_m2)}/m²")
+    L.append("")
+
+    # por que virou alerta
     if im.mediana_grupo and im.pct_abaixo > 0:
-        linhas.append(f"📉 <b>{im.pct_abaixo*100:.0f}% abaixo</b> da mediana do grupo "
-                      f"({fmt_reais(im.mediana_grupo)}/m², n={im.n_grupo})")
+        L.append(f"📉 <b>{im.pct_abaixo * 100:.0f}% abaixo</b> do preço/m² típico da região")
+        L.append(f"    este: {_reais(im.preco_m2)}/m²   ·   típico: ~{_reais(im.mediana_grupo)}/m²")
+        econ = (im.mediana_grupo - im.preco_m2) * (im.area or 0)
+        if econ > 0:
+            L.append(f"    ≈ {_reais(econ)} mais barato que o típico de imóveis parecidos")
+        if im.criterio:
+            L.append(f"    <i>base de comparação: {E(im.criterio)}</i>")
+    elif im.keywords:
+        L.append("📉 Não está claramente abaixo do mercado — "
+                 "entrou pelos <b>sinais de venda abaixo</b>.")
+    L.append("")
+
     if im.keywords:
-        linhas.append(f"🔑 {', '.join(im.keywords)}")
-    linhas.append(f"⭐ score {im.score}  •  fonte: {html.escape(im.fonte)}")
-    linhas.append(f"🔗 {html.escape(im.url)}")
-    return "\n".join(linhas)
+        legiveis = ", ".join(_KW_LEGIVEL.get(k, k) for k in im.keywords)
+        L.append(f"🔑 <b>Sinais de venda rápida:</b> {E(legiveis)}")
+        L.append("")
+
+    L.append(f"📊 {_confianca(im.n_grupo)}  ·  relevância {im.score:.0f}")
+    L.append("⚠️ Preço de <i>anúncio</i>, não de venda. O bot só encurta a busca — confirme visitando.")
+    L.append("")
+    L.append(f"🔗 {E(im.url)}")
+    L.append(f"<i>fonte: {E(im.fonte)}</i>")
+    return "\n".join(L)

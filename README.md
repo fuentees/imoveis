@@ -60,12 +60,29 @@ python main.py --once --max-paginas 1  # teste rápido, 1 página por site
 Para deixar rodando sozinho: use o `--loop`, ou agende o `--once` no `cron`.
 O log vai pro console e pra `bot.log` (troque com `--log-file` ou `--log-file ""`).
 
-## Calibração (importante)
+## Calibração
 
-- Comece com `exigir_keyword: false` e olhe o que aparece no `--dry-run`.
-- Se vier muito ruído, suba o `limiar_desconto` (0.30 → 0.40) ou ligue
-  `exigir_keyword: true` (só alerta barato QUE TAMBÉM tem palavra-chave).
-- Ajuste a lista `PALAVRAS_CHAVE` em `analyzer.py` ao vocabulário da sua região.
+Já calibrado para o litoral sul de SP a partir de dry-runs reais:
+
+- `min_amostra: 6` — abaixo disso a mediana ficava instável em bairro de nicho
+  (casas de 670 m², coberturas). Grupos menores não geram alerta de preço.
+- **Palavra-chave só dispara sozinha se for "forte"** (espólio, inventário,
+  herança…). `partilha`, `desocupado` e afins entram em `KEYWORDS_FRACAS`
+  (`analyzer.py`) — aparecem em rodapé jurídico de site, então só contam quando
+  o imóvel também está abaixo do mercado.
+- Palavra-chave é ignorada se o imóvel está **acima** da mediana do grupo.
+- `Paulumar` roda com `detalhe: true` — o card e a página divergiam na área.
+
+Para apertar mais: suba `limiar_desconto` (0.30 → 0.40) ou ligue
+`exigir_keyword: true`. Ajuste `PALAVRAS_CHAVE` ao vocabulário da sua região.
+
+## O alerta no Telegram
+
+Cada alerta diz, em texto claro: preço e specs, **quanto** está abaixo do
+preço/m² típico (em % e em R$), **qual** a base de comparação (ex.: "casas de
+208–432 m², 4–6 quartos, em Jardim Acapulco"), o **tamanho da amostra** e a
+confiança, os sinais de venda encontrados, e o lembrete de que preço de anúncio
+não é preço de venda.
 
 ## ⚠️ Ressalvas honestas
 

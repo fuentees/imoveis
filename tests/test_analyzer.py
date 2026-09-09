@@ -108,6 +108,45 @@ def test_analisar_keyword_dispara_sem_ser_barato():
     assert "espolio" in ops[0].keywords
 
 
+def _grupo6(preco_m2=8000.0):
+    return [mk(url=f"http://x/g{i}", titulo=f"C{i}", area=a, preco=a * preco_m2, quartos=3)
+            for i, a in enumerate([300, 310, 320, 330, 340, 350])]
+
+
+def test_keyword_ignorada_quando_imovel_acima_do_mercado():
+    caro = mk(url="http://x/caro", titulo="Cx", desc="rodapé do site: partilha divórcio",
+              area=320, preco=320 * 12000, quartos=3)      # 50% acima da mediana
+    ops = analisar(_grupo6() + [caro], min_amostra=6, limiar_desconto=0.30)
+    assert "http://x/caro" not in [o.url for o in ops]
+
+
+def test_keyword_vale_quando_imovel_no_mercado():
+    kw = mk(url="http://x/kw", titulo="Ck", desc="imóvel de partilha, aceito proposta",
+            area=320, preco=320 * 7800, quartos=3)          # ~no mercado, não é "barato"
+    ops = analisar(_grupo6() + [kw], min_amostra=6, limiar_desconto=0.30)
+    assert "http://x/kw" in [o.url for o in ops]
+
+
+def test_partilha_sozinha_nao_dispara():
+    im = mk(url="http://x/foot", desc="Rodapé do site: consultoria em partilha de bens.",
+            area=136, preco=136 * 35000, quartos=4)
+    assert analisar([im], min_amostra=6) == []
+
+
+def test_partilha_com_palavra_forte_dispara():
+    im = mk(url="http://x/forte", desc="Imóvel de espólio, partilha de bens, aceito proposta",
+            area=200, preco=200 * 6000, quartos=3)
+    assert "http://x/forte" in [o.url for o in analisar([im], min_amostra=6)]
+
+
+def test_criterio_descreve_a_base_de_comparacao():
+    steal = mk(url="http://x/steal", titulo="Z", area=352, preco=352 * 4800, quartos=3)
+    ops = analisar(_grupo6() + [steal], min_amostra=6, limiar_desconto=0.30)
+    op = next(o for o in ops if o.url == "http://x/steal")
+    assert op.criterio.startswith("apartamentos de ")
+    assert "quartos" in op.criterio and "Jardim Acapulco" in op.criterio
+
+
 def test_analisar_filtro_de_sanidade_descarta_preco_m2_absurdo():
     im = mk(url="http://x/bug", desc="espólio inventário urgente",
             area=50, preco=10_000_000, quartos=2)          # 200.000/m²

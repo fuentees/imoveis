@@ -27,7 +27,8 @@ scraper:
                              # ponha false aqui (global) ou no bloco do site.
 
 analise:
-  min_amostra: 4             # mínimo de comparáveis no grupo p/ confiar na mediana
+  min_amostra: 6             # mínimo de comparáveis no grupo p/ confiar na mediana
+                             # (4-5 dá mediana instável em bairro de nicho)
   limiar_desconto: 0.30      # 0.30 = alerta quem está 30%+ abaixo da mediana do grupo
   exigir_keyword: false      # true = só alerta barato QUE TAMBÉM tenha palavra-chave
                              # (comece com false p/ calibrar, depois avalie true)
@@ -93,6 +94,8 @@ sites:
     pular_param_pagina_1: true    # "&page=1" dá 404; na 1ª página o parâmetro some
     tipo_padrao: "apartamento"
     paginas: 3
+    detalhe: true                # card e página de detalhe divergiam na área
+                                 # (240 vs 159 m²); a de detalhe tem a área útil.
     # plataforma: Microsistec "Motor Imobiliario v8" (Next.js, SSR)
     seletores:
       card: "div.property-item"

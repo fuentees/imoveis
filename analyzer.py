@@ -30,6 +30,11 @@ PALAVRAS_CHAVE = [
     "desocupado", "documentacao ok", "escritura ok",
 ]
 
+# Palavras que SOZINHAS não disparam alerta: aparecem muito em rodapé/boilerplate
+# jurídico dos sites. Só contam se o imóvel também estiver abaixo do mercado
+# (aí entram no texto do alerta e no score, mas não são o gatilho).
+KEYWORDS_FRACAS = {"partilha", "desocupado", "documentacao ok", "escritura ok"}
+
 # Abreviações comuns de bairro -> forma canônica, pra "Jd Acapulco",
 # "Jardim Acapulco" e "JD. ACAPULCO" caírem no mesmo grupo. Só as inequívocas:
 # "st"/"pr"/"v" ficam de fora (sítio×santo, praia×professor, vila×vale).
@@ -67,6 +72,7 @@ class Imovel:
     mediana_grupo: Optional[float] = field(default=None)
     n_grupo: int = field(default=0)
     pct_abaixo: float = field(default=0.0)     # 0.35 = 35% abaixo da mediana
+    criterio: str = field(default="")          # base de comparação, em texto
     keywords: list = field(default_factory=list)
     score: float = field(default=0.0)
 
@@ -181,6 +187,28 @@ def _comparaveis(im: Imovel, pool):
     return out
 
 
+_TIPO_PLURAL = {
+    "casa": "casas", "apartamento": "apartamentos", "sobrado": "sobrados",
+    "cobertura": "coberturas", "kitnet": "kitnets", "studio": "studios",
+    "loft": "lofts", "terreno": "terrenos", "chacara": "chácaras",
+}
+
+
+def _descreve_criterio(im: Imovel) -> str:
+    """Texto tipo 'casas de 210–430 m², 4–6 quartos, em Jardim Acapulco'."""
+    plural = _TIPO_PLURAL.get(normalizar_texto(im.tipo),
+                              (im.tipo + "s") if im.tipo else "imóveis")
+    lo, hi = im.area * (1 - _AREA_TOL), im.area * (1 + _AREA_TOL)
+    partes = [f"{plural} de {lo:.0f}–{hi:.0f} m²"]
+    if im.quartos:
+        q_lo = max(1, im.quartos - _QUARTOS_TOL)
+        partes.append(f"{q_lo}–{im.quartos + _QUARTOS_TOL} quartos")
+    onde = im.bairro or im.cidade
+    if onde:
+        partes.append(f"em {onde}")
+    return ", ".join(partes)
+
+
 def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
              preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000,
              historico=None):
@@ -236,13 +264,20 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
             if med > 0:
                 im.pct_abaixo = (med - im.preco_m2) / med
                 barato = im.pct_abaixo >= limiar_desconto
+                im.criterio = _descreve_criterio(im)
 
+        # keyword como GATILHO só vale se: (a) há palavra forte (não só rodapé) e
+        # (b) o imóvel não está claramente acima do mercado (keyword + preço
+        # salgado quase sempre é texto de rodapé, não vendedor com pressa).
         tem_kw = len(im.keywords) > 0
+        tem_kw_forte = any(k not in KEYWORDS_FRACAS for k in im.keywords)
+        acima_do_mercado = bool(im.mediana_grupo) and im.preco_m2 > im.mediana_grupo * 1.15
+        kw_gatilho = tem_kw_forte and not acima_do_mercado
 
         if exigir_keyword:
-            alerta = barato and tem_kw
+            alerta = barato and kw_gatilho
         else:
-            alerta = barato or tem_kw
+            alerta = barato or kw_gatilho
 
         if alerta:
             im.score = _score(im, barato, tem_kw)
