@@ -57,9 +57,10 @@ python main.py --loop                # roda continuamente (intervalo do config)
 python main.py --once --max-paginas 1  # teste rápido, 1 página por site
 ```
 
-Para deixar rodando sozinho (Task Scheduler no Windows, `--loop`, cron):
-ver **[docs/rodando.md](docs/rodando.md)**. O log vai pro console e pra
-`bot.log` (troque com `--log-file` ou `--log-file ""`).
+Para deixar rodando sozinho — **GitHub Actions** (cron no próprio repo, sem
+servidor; já vem em `.github/workflows/bot.yml`), Task Scheduler no Windows,
+`--loop` ou cron: ver **[docs/rodando.md](docs/rodando.md)**. O log vai pro
+console e pra `bot.log` (troque com `--log-file` ou `--log-file ""`).
 
 ## Calibração
 

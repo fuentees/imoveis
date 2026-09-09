@@ -18,7 +18,34 @@ python main.py --once --dry-run    # não envia, só imprime
 python main.py --once              # envia de verdade um ciclo
 ```
 
-## 2. Windows — Task Scheduler (recomendado)
+## 2. Online, sem máquina local — GitHub Actions
+
+Já vem pronto em `.github/workflows/bot.yml`: roda `main.py --once` a cada 3h,
+sem servidor. Você só precisa dar os secrets:
+
+1. No repo: **Settings → Secrets and variables → Actions → New repository secret**.
+   Crie dois:
+   - `TELEGRAM_TOKEN`  → o token do @BotFather
+   - `TELEGRAM_CHAT_ID` → seu chat id (@userinfobot)
+2. Aba **Actions** → workflow **bot-imoveis** → **Run workflow** pra testar agora.
+   Depois disso ele roda sozinho no cron.
+
+Como funciona:
+- a config vem de `config.example.yaml` (copiada pra `config.yaml` no runner);
+  as credenciais vêm dos secrets (variável de ambiente vence o arquivo).
+- o `imoveis.db` **persiste** numa branch órfã `data` (o workflow puxa antes de
+  rodar e empurra depois). Não polui o histórico da `main`.
+- o `bot.log` de cada ciclo fica em **Actions → run → Artifacts** por 7 dias.
+
+Detalhes/limites:
+- horário do cron é **UTC** e o GitHub pode atrasar 5–15 min sob carga.
+- repositório **público** = minutos de Actions ilimitados (este é público).
+- workflow agendado **pausa após 60 dias sem commit na `main`** — o GitHub
+  manda e-mail; é só reativar (ou commitar algo).
+- upgrade limpo do estado: trocar a branch `data` por um SQLite hospedado
+  (Turso tem free tier) — mexe só no `storage.py`.
+
+## 3. Windows — Task Scheduler
 
 Roda `run.bat` (= `main.py --once`) de tempos em tempos. Sobrevive a reboot.
 
@@ -38,7 +65,7 @@ Para conferir: aba **Histórico** da tarefa, e o `bot.log` na pasta do projeto.
 O `intervalo_minutos` do `config.yaml` é ignorado nesse modo — quem agenda é
 o Windows.
 
-## 3. Alternativa — modo loop
+## 4. Alternativa local — modo loop
 
 ```bash
 python main.py --loop
@@ -49,7 +76,7 @@ Fica rodando e re-varre a cada `agendamento.intervalo_minutos`. Simples, mas
 uma máquina sempre ligada (Raspberry Pi, VPS, notebook velho) com `systemd`
 ou `cron` chamando `python main.py --once`.
 
-## 4. Primeira semana
+## 5. Primeira semana
 
 - Rode em `--loop` ou agendado e **confira na mão** os alertas que chegam.
 - Ajuste no `config.yaml`: `limiar_desconto`, `min_amostra`, `exigir_keyword`.
