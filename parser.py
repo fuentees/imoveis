@@ -45,6 +45,14 @@ def _taxa_ctx(t: str, ini: int, fim: int) -> bool:
     return bool(_FEE_ANTES.search(antes) or _FEE_DEPOIS.search(depois))
 
 
+# "de R$ X por R$ Y" / "por apenas R$ Y": o Y é o preço que vale.
+_POR_ANTES = re.compile(r"\bpor\s+(?:apenas\s+|somente\s+|só\s+)?$", re.IGNORECASE)
+
+
+def _preco_reduzido_ctx(t: str, ini: int) -> bool:
+    return bool(_POR_ANTES.search(t[max(0, ini - 12):ini]))
+
+
 def parse_preco(texto: str):
     """
     Extrai o preço de VENDA do texto.
@@ -54,16 +62,20 @@ def parse_preco(texto: str):
     - "R$ 1,2 milhão" / "1.2 milhões" -> 1200000.0
     - ignora condomínio, IPTU, taxas e aluguel ("R$ 2.500/mês").
 
-    Estratégia: coleta TODOS os valores plausíveis com o contexto de cada um e
-    devolve o MAIOR. O preço de venda é quase sempre o maior número em reais do
-    anúncio; condomínio/IPTU/aluguel são menores. Só cai para "o maior valor
-    limpo" se o maior de todos estiver, ele próprio, num contexto de taxa.
+    Estratégia: coleta TODOS os valores plausíveis com o contexto de cada um.
+    - se algum valor vem depois de "por [apenas] R$" (preço reduzido de
+      "de R$ X por R$ Y"), esse ganha;
+    - senão, devolve o MAIOR valor que não seja condomínio/IPTU/aluguel
+      (o preço de venda é quase sempre o maior número em reais do anúncio).
     Retorna None se não houver valor de venda plausível.
     """
     if not texto:
         return None
     t = texto.replace("\xa0", " ")
-    candidatos = []  # (valor, taxa?)
+    candidatos = []  # (valor, taxa?, reduzido?)
+
+    def _add(val, ini, fim):
+        candidatos.append((val, _taxa_ctx(t, ini, fim), _preco_reduzido_ctx(t, ini)))
 
     # "480 mil" / "1,2 milhão" / "480k"
     for m in re.finditer(rf"r?\$?\s*([\d.,]+)\s*({_MILHAO}|{_MIL})", t, re.IGNORECASE):
@@ -71,30 +83,29 @@ def parse_preco(texto: str):
         if num is None:
             continue
         unid = _strip_accents(m.group(2).lower())
-        val = num * 1_000_000 if unid.startswith("milh") else num * 1_000
-        candidatos.append((val, _taxa_ctx(t, m.start(), m.end())))
+        _add(num * 1_000_000 if unid.startswith("milh") else num * 1_000,
+             m.start(), m.end())
 
     # valor cheio "R$ 1.250.000,00"
     for m in re.finditer(r"r\$\s*([\d.]+(?:,\d{2})?)", t, re.IGNORECASE):
         v = _num_br(m.group(1))
         if v is not None and v >= 1_000:
-            candidatos.append((v, _taxa_ctx(t, m.start(), m.end())))
+            _add(v, m.start(), m.end())
 
     # último recurso: número grande com separador de milhar, sem "R$"
     if not candidatos:
         for m in re.finditer(r"(\d{1,3}(?:\.\d{3})+(?:,\d{2})?)", t):
             v = _num_br(m.group(1))
             if v is not None and v >= 10_000:
-                candidatos.append((v, _taxa_ctx(t, m.start(), m.end())))
+                _add(v, m.start(), m.end())
 
-    if not candidatos:
+    limpos = [(v, red) for v, taxa, red in candidatos if not taxa]
+    if not limpos:
         return None
-    candidatos.sort(reverse=True)          # maior valor primeiro
-    maior_val, maior_taxa = candidatos[0]
-    if not maior_taxa:
-        return maior_val
-    limpos = [v for v, taxa in candidatos if not taxa]
-    return max(limpos) if limpos else None
+    reduzidos = [v for v, red in limpos if red]
+    if reduzidos:
+        return max(reduzidos)
+    return max(v for v, red in limpos)
 
 
 def _num_br(s: str):
@@ -118,7 +129,10 @@ def _num_br(s: str):
 # ---------------------------------------------------------------------------
 # ÁREA
 # ---------------------------------------------------------------------------
-_AREA_UNID = r"(?:m2|m²|metros?|mts?)"
+# "metros" SOZINHO fica de fora de propósito: "a 500 metros da praia" /
+# "300 metros do centro" é distância, não área, e virava m² fantasma.
+# Exige m² / m2 / "metros quadrados" / "metros²".
+_AREA_UNID = r"(?:m²|m2|metros?\s*(?:quadrados?|²|2))"
 _TERRENO_CTX = r"terreno|lote|area total|area do lote|do lote"
 
 

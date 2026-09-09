@@ -1,4 +1,8 @@
-import time, collections, yaml
+import sys, time, collections, yaml
+try:                                   # console do Windows (cp1252) + emoji do alerta
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+except (AttributeError, ValueError):
+    pass
 from scraper import raspar_todos
 from analyzer import analisar, _dedupe
 from storage import Storage

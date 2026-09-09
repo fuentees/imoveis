@@ -40,6 +40,15 @@ def test_parse_preco_maior_valor_vence_mesmo_com_taxa_ao_lado():
     assert parse_preco(t) == 890_000.0
 
 
+@pytest.mark.parametrize("texto, esperado", [
+    ("De R$ 1.600.000 por R$ 1.300.000", 1_300_000.0),
+    ("Casa em Guarujá, de R$ 900 mil por apenas R$ 720 mil", 720_000.0),
+    ("Baixou! Era R$ 2.000.000, agora por R$ 1.750.000", 1_750_000.0),
+])
+def test_parse_preco_de_x_por_y(texto, esperado):
+    assert parse_preco(texto) == esperado
+
+
 # ---------------------------------------------------------------- área
 @pytest.mark.parametrize("texto, esperado", [
     ("120 m²", 120.0),
@@ -54,6 +63,14 @@ def test_parse_area_ok(texto, esperado):
 def test_parse_area_ignora_terreno():
     assert parse_area("560 m² de terreno") is None
     assert parse_area("Casa 180 m², terreno 500 m²") == 180.0
+
+
+def test_parse_area_ignora_metros_de_distancia():
+    # "500 metros do centro" é distância, não área
+    assert parse_area("Apartamento a 500 metros do centro da cidade") is None
+    assert parse_area("fica a 300 metros da praia. Área: 88 m²") == 88.0
+    assert parse_area("120 metros quadrados") == 120.0
+    assert parse_area_construida("Lindo apto a 500 metros da praia, 3 dorms") is None
 
 
 def test_parse_area_construida():
