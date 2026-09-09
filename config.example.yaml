@@ -22,6 +22,9 @@ scraper:
   verificar_ssl: true        # ponha false se estiver atrás de proxy corporativo
                              # que intercepta HTTPS (erro CERTIFICATE_VERIFY_FAILED).
                              # Pode ser definido por site também: "verificar_ssl: false".
+  respeitar_robots: true     # checa o robots.txt de cada domínio antes de raspar.
+                             # Se um site legítimo for bloqueado indevidamente,
+                             # ponha false aqui (global) ou no bloco do site.
 
 analise:
   min_amostra: 4             # mínimo de comparáveis no grupo p/ confiar na mediana
@@ -31,6 +34,10 @@ analise:
   preco_min: 50000           # ignora anúncio com preço abaixo disso (parse errado)
   preco_m2_min: 300          # piso de sanidade p/ preço/m²
   preco_m2_max: 60000        # teto de sanidade p/ preço/m² (litoral: ~2k a 25k)
+  historico_dias: 180        # quantos dias do banco entram na amostra da mediana
+                             # (0 = só a raspagem atual)
+  realerta_queda: 0.10       # re-alerta um imóvel já avisado só se o preço cair
+                             # pelo menos isso (0.10 = 10%) desde o último alerta
 
 agendamento:
   intervalo_minutos: 180     # de quanto em quanto tempo revarre (modo loop)

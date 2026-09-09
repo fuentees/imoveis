@@ -6,15 +6,18 @@ palavras-chave de espólio / venda urgente**. Manda os achados pelo **Telegram**
 
 ## Como funciona (o raciocínio)
 
-1. **Raspa** cada imobiliária configurada (um bloco por site no `config.yaml`).
-2. **Agrupa comparáveis**: `cidade | bairro | tipo | faixa de metragem | faixa de quartos`.
-   Comparar o m² da região inteira gera falso positivo — unidade grande "dilui"
-   o m². Por isso a comparação é sempre dentro do grupo.
-3. **Mediana de preço/m²** por grupo (só confia em grupos com amostra suficiente).
-4. **Sinaliza** quem está X% abaixo da mediana do próprio grupo.
+1. **Raspa** cada imobiliária configurada (um bloco por site no `config.yaml`),
+   respeitando o `robots.txt` de cada domínio.
+2. **Agrupa por** `cidade | bairro | tipo`. Dentro do grupo, cada imóvel é
+   comparado só com os **comparáveis** dele (área ±35% e quartos ±1) — janela
+   relativa, sem o "efeito degrau" de faixas fixas.
+3. **Mediana de preço/m²** dos comparáveis (só confia com amostra suficiente).
+   A amostra junta a raspagem atual + o histórico recente do banco.
+4. **Sinaliza** quem está X% abaixo da mediana dos próprios comparáveis.
 5. **Cruza com palavras-chave** (`espólio`, `inventário`, `urgente`, `aceito
    proposta`...). Esse é o sinal que separa oportunidade real de imóvel-problema.
-6. **Pontua e alerta** no Telegram (sem repetir imóvel já enviado).
+6. **Pontua e alerta** no Telegram (sem repetir imóvel já enviado; só re-alerta
+   se o preço cair mais depois).
 
 ## Instalação
 
@@ -22,6 +25,9 @@ palavras-chave de espólio / venda urgente**. Manda os achados pelo **Telegram**
 pip install -r requirements.txt
 cp config.example.yaml config.yaml   # e edite
 ```
+
+No Windows use `python` (não `python3`). Para rodar os testes:
+`pip install -r requirements-dev.txt && pytest`.
 
 ## Configurar o Telegram
 
@@ -45,13 +51,14 @@ do texto do card como fallback.
 ## Uso
 
 ```bash
-python3 main.py --once --dry-run      # roda uma vez, só imprime (calibração)
-python3 main.py --once                # roda uma vez e envia pelo Telegram
-python3 main.py --loop                # roda continuamente (intervalo do config)
-python3 main.py --once --max-paginas 1  # teste rápido, 1 página por site
+python main.py --once --dry-run      # roda uma vez, só imprime (calibração)
+python main.py --once                # roda uma vez e envia pelo Telegram
+python main.py --loop                # roda continuamente (intervalo do config)
+python main.py --once --max-paginas 1  # teste rápido, 1 página por site
 ```
 
 Para deixar rodando sozinho: use o `--loop`, ou agende o `--once` no `cron`.
+O log vai pro console e pra `bot.log` (troque com `--log-file` ou `--log-file ""`).
 
 ## Calibração (importante)
 
@@ -67,18 +74,20 @@ Para deixar rodando sozinho: use o `--loop`, ou agende o `--once` no `cron`.
   compra no automático — o bot só encurta o funil.
 - **Cada site é um site.** Layout muda → seletor quebra. Isso é manutenção
   esperada, não defeito.
-- **Termos de uso.** Sites de imobiliária pequena costumam não ter anti-scraping,
-  mas verifique o `robots.txt` e os termos de cada um. Mantenha o `delay` alto
-  (seja educado) e não sobrecarregue os servidores.
+- **Termos de uso.** O bot já checa o `robots.txt` de cada domínio, mas leia
+  também os termos de uso. Mantenha o `delay` alto (seja educado) e não
+  sobrecarregue os servidores.
 
 ## Estrutura
 
 ```
-parser.py     extrai preço/área/quartos de texto BR ("R$ 1.250.000", "120 m²")
-scraper.py    raspador genérico configurável por seletores CSS
-analyzer.py   grupos + mediana de preço/m² + outlier + palavras-chave + score
-storage.py    SQLite: histórico de imóveis + controle de já-alertados
+parser.py     extrai preço/área/quartos de texto BR ("R$ 1,2 milhão", "120 m²")
+scraper.py    raspador genérico configurável por seletores CSS (+ robots.txt)
+analyzer.py   grupos + comparáveis (área/quartos) + mediana + keywords + score
+storage.py    SQLite: histórico de imóveis + já-alertados (com preço do alerta)
 notifier.py   envio pelo Telegram (Bot API)
+log.py        logging pro console e pro bot.log
 main.py       orquestrador (--once / --loop / --dry-run)
 config.yaml   sua configuração (sites, limiares, credenciais)
+tests/        pytest (parser, analyzer, scraper, storage)
 ```

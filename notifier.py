@@ -12,6 +12,10 @@ Como obter as credenciais:
 import html
 import requests
 
+import log
+
+_log = log.get(__name__)
+
 
 class Telegram:
     def __init__(self, token, chat_id):
@@ -31,10 +35,10 @@ class Telegram:
                 "disable_web_page_preview": False,
             }, timeout=20)
             if r.status_code != 200:
-                print(f"  [!] Telegram respondeu {r.status_code}: {r.text[:200]}")
+                _log.warning("  [!] Telegram respondeu %s: %s", r.status_code, r.text[:200])
             return r.status_code == 200
         except Exception as e:
-            print(f"  [!] Falha ao enviar Telegram: {e}")
+            _log.warning("  [!] Falha ao enviar Telegram: %s", e)
             return False
 
 

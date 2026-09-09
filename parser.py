@@ -1,7 +1,7 @@
 """
 parser.py
 Normaliza texto bruto de anúncio (formato brasileiro) em números.
-Lida com: "R$ 1.250.000,00", "120 m²", "3 quartos", "2 vagas" etc.
+Lida com: "R$ 1.250.000,00", "R$ 1,2 milhão", "120 m²", "3 quartos", "2 vagas".
 """
 import re
 import unicodedata
@@ -21,38 +21,80 @@ def normalizar_texto(s: str) -> str:
     return s
 
 
+# ---------------------------------------------------------------------------
+# PREÇO
+# ---------------------------------------------------------------------------
+# "mil"/"k" e "milhão/milhões". A ordem importa: 'milh...' ANTES de 'mil',
+# senão o 'mil' casa com o começo de "milhão" e R$ 1,2 milhão vira R$ 1.200.
+_MILHAO = r"milh(?:[aã]o|[oõ]es|ao|oes)"
+_MIL = r"(?:mil|k)\b"
+
+# Rótulo de taxa que aparece ANTES do valor ("Condomínio R$ 850", "IPTU R$ 300").
+# Fica de fora "financi..."/"entrada"/"parcela" de propósito: costumam aparecer
+# coladas no próprio preço de venda.
+_FEE_ANTES = re.compile(r"condom|cond\.|iptu|taxa|alug|loca[çc]", re.IGNORECASE)
+# Marca de aluguel que aparece DEPOIS do valor ("R$ 2.500/mês", "R$ 3.000 mensais").
+_FEE_DEPOIS = re.compile(r"^\s*(?:/\s*m[êe]s|por\s+m[êe]s|ao\s+m[êe]s|mensa|/\s*m[êe])",
+                         re.IGNORECASE)
+
+
+def _taxa_ctx(t: str, ini: int, fim: int) -> bool:
+    """True se o valor em [ini:fim] parece ser condomínio/IPTU/taxa/aluguel."""
+    antes = t[max(0, ini - 18):ini]
+    depois = t[fim:fim + 10]
+    return bool(_FEE_ANTES.search(antes) or _FEE_DEPOIS.search(depois))
+
+
 def parse_preco(texto: str):
     """
-    Extrai o primeiro valor monetário do texto.
-    'R$ 1.250.000,00' -> 1250000.0 ; 'R$ 480 mil' -> 480000.0
-    Retorna None se não achar algo plausível.
+    Extrai o preço de VENDA do texto.
+
+    - "R$ 1.250.000,00" -> 1250000.0
+    - "R$ 480 mil" / "R$ 480k" -> 480000.0
+    - "R$ 1,2 milhão" / "1.2 milhões" -> 1200000.0
+    - ignora condomínio, IPTU, taxas e aluguel ("R$ 2.500/mês").
+
+    Estratégia: coleta TODOS os valores plausíveis com o contexto de cada um e
+    devolve o MAIOR. O preço de venda é quase sempre o maior número em reais do
+    anúncio; condomínio/IPTU/aluguel são menores. Só cai para "o maior valor
+    limpo" se o maior de todos estiver, ele próprio, num contexto de taxa.
+    Retorna None se não houver valor de venda plausível.
     """
     if not texto:
         return None
     t = texto.replace("\xa0", " ")
+    candidatos = []  # (valor, taxa?)
 
-    # caso "480 mil" / "1,2 milhão"
-    m = re.search(r"r?\$?\s*([\d.,]+)\s*(mil|milh(?:ao|oes|ões|ao))", t, re.IGNORECASE)
-    if m:
+    # "480 mil" / "1,2 milhão" / "480k"
+    for m in re.finditer(rf"r?\$?\s*([\d.,]+)\s*({_MILHAO}|{_MIL})", t, re.IGNORECASE):
         num = _num_br(m.group(1))
-        if num is not None:
-            unidade = _strip_accents(m.group(2).lower())
-            if unidade.startswith("mil"):
-                return num * 1_000
-            return num * 1_000_000
+        if num is None:
+            continue
+        unid = _strip_accents(m.group(2).lower())
+        val = num * 1_000_000 if unid.startswith("milh") else num * 1_000
+        candidatos.append((val, _taxa_ctx(t, m.start(), m.end())))
 
-    # caso valor cheio "R$ 1.250.000,00"
-    m = re.search(r"r\$\s*([\d.]+(?:,\d{2})?)", t, re.IGNORECASE)
-    if m:
-        return _num_br(m.group(1))
-
-    # fallback: primeiro número grande solto
-    m = re.search(r"([\d.]{4,}(?:,\d{2})?)", t)
-    if m:
+    # valor cheio "R$ 1.250.000,00"
+    for m in re.finditer(r"r\$\s*([\d.]+(?:,\d{2})?)", t, re.IGNORECASE):
         v = _num_br(m.group(1))
-        if v and v >= 10_000:  # evita pegar metragem por engano
-            return v
-    return None
+        if v is not None and v >= 1_000:
+            candidatos.append((v, _taxa_ctx(t, m.start(), m.end())))
+
+    # último recurso: número grande com separador de milhar, sem "R$"
+    if not candidatos:
+        for m in re.finditer(r"(\d{1,3}(?:\.\d{3})+(?:,\d{2})?)", t):
+            v = _num_br(m.group(1))
+            if v is not None and v >= 10_000:
+                candidatos.append((v, _taxa_ctx(t, m.start(), m.end())))
+
+    if not candidatos:
+        return None
+    candidatos.sort(reverse=True)          # maior valor primeiro
+    maior_val, maior_taxa = candidatos[0]
+    if not maior_taxa:
+        return maior_val
+    limpos = [v for v, taxa in candidatos if not taxa]
+    return max(limpos) if limpos else None
 
 
 def _num_br(s: str):
@@ -73,17 +115,32 @@ def _num_br(s: str):
         return None
 
 
+# ---------------------------------------------------------------------------
+# ÁREA
+# ---------------------------------------------------------------------------
 _AREA_UNID = r"(?:m2|m²|metros?|mts?)"
+_TERRENO_CTX = r"terreno|lote|area total|area do lote|do lote"
 
 
 def parse_area(texto: str):
-    """Extrai metragem em m². '120 m²' / '120m2' / '120 metros' -> 120.0"""
+    """
+    Extrai metragem em m². '120 m²' / '120m2' / '120 metros' -> 120.0
+
+    Pula ocorrências cujo contexto imediato fala em terreno/lote/área total:
+    "560 m² de terreno" -> None (não serve para comparar preço/m² de construção).
+    """
     if not texto:
         return None
     t = _strip_accents(texto.lower())
-    m = re.search(rf"([\d.,]+)\s*{_AREA_UNID}\b", t)
-    if m:
-        return _num_br(m.group(1))
+    for m in re.finditer(rf"([\d.,]+)\s*{_AREA_UNID}\b", t):
+        antes = t[max(0, m.start() - 16):m.start()]
+        # só o trecho ATÉ o próximo separador conta como "depois" deste número
+        depois = re.split(r"[,;/•|]", t[m.end():m.end() + 16])[0]
+        if re.search(_TERRENO_CTX, antes) or re.search(_TERRENO_CTX, depois):
+            continue
+        v = _num_br(m.group(1))
+        if v:
+            return v
     return None
 
 
@@ -228,18 +285,22 @@ def parse_local(texto: str, url: str = ""):
     return (cidade or c_u, bairro or b_u)
 
 
+# ---------------------------------------------------------------------------
+# QUARTOS / VAGAS
+# ---------------------------------------------------------------------------
 def parse_quartos(texto: str):
-    """Extrai nº de quartos/dormitórios."""
+    """
+    Extrai nº de quartos/dormitórios. Considera também "suíte(s)" e devolve o
+    MAIOR número rotulado — "1 suíte e 3 dormitórios" -> 3 (e não 1, nem 4).
+    """
     if not texto:
         return None
     t = _strip_accents(texto.lower())
-    m = re.search(r"(\d+)\s*(?:quartos?|dorm|dormitorios?|suites?\b.*)", t)
-    if m:
-        return int(m.group(1))
-    m = re.search(r"(\d+)\s*qto", t)
-    if m:
-        return int(m.group(1))
-    return None
+    nums = [int(n) for n in re.findall(
+        r"(\d+)\s*(?:quartos?|dormitorios?|dorms?\b|qtos?\b|qts?\b)", t)]
+    nums += [int(n) for n in re.findall(r"(\d+)\s*su[ií]te?s?\b", t)]
+    nums = [n for n in nums if 0 < n <= 20]
+    return max(nums) if nums else None
 
 
 def parse_vagas(texto: str):

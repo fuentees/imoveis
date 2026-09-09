@@ -3,14 +3,16 @@ analyzer.py
 O cérebro. Recebe uma lista de imóveis normalizados e devolve os que valem alerta.
 
 Lógica:
-1. Agrupa imóveis COMPARÁVEIS: (bairro, tipo, faixa de metragem, faixa de quartos).
-   -> Comparar m² da região inteira gera falso positivo (unidade grande dilui o m²).
-2. Para cada grupo com amostra suficiente, calcula a MEDIANA de preço/m².
-3. Marca como candidato quem está X% ABAIXO da mediana do próprio grupo.
-4. Cruza com PALAVRAS-CHAVE de espólio/urgência (o sinal que separa
-   oportunidade real de imóvel-problema).
-5. Pontua e devolve ordenado.
+1. Dedupe: colapsa o MESMO imóvel visto 2x (URL repetida ou reanúncio com outro código).
+2. Agrupa por (cidade | bairro | tipo). Dentro do grupo, a mediana de cada imóvel
+   é calculada só sobre os COMPARÁVEIS dele: área ±35% e quartos ±1. Isso evita o
+   "efeito degrau" das faixas fixas (349 m² e 351 m² caíam em baldes diferentes).
+3. Junta comparáveis do histórico (banco) para grupos com amostra pequena.
+4. Marca candidato quem está X% ABAIXO da mediana dos próprios comparáveis.
+5. Cruza com PALAVRAS-CHAVE de espólio/urgência.
+6. Pontua e devolve ordenado.
 """
+import re
 from dataclasses import dataclass, field
 from statistics import median
 from typing import Optional
@@ -27,6 +29,22 @@ PALAVRAS_CHAVE = [
     "precisa vender", "preciso vender", "vende-se rapido", "venda rapida",
     "desocupado", "documentacao ok", "escritura ok",
 ]
+
+# Abreviações comuns de bairro -> forma canônica, pra "Jd Acapulco",
+# "Jardim Acapulco" e "JD. ACAPULCO" caírem no mesmo grupo. Só as inequívocas:
+# "st"/"pr"/"v" ficam de fora (sítio×santo, praia×professor, vila×vale).
+_BAIRRO_ABREV = [
+    (r"\bjd\b\.?", "jardim"), (r"\bpq\b\.?", "parque"),
+    (r"\bres\b\.?", "residencial"), (r"\bresid\b\.?", "residencial"),
+    (r"\bcj\b\.?", "conjunto"), (r"\bcjto\b\.?", "conjunto"),
+    (r"\bvl\b\.?", "vila"), (r"\bcond\b\.?", "condominio"),
+    (r"\bbal\b\.?", "balneario"), (r"\bbaln\b\.?", "balneario"),
+    (r"\bpca\b\.?", "praca"),
+]
+
+# faixas de comparação relativa
+_AREA_TOL = 0.35        # comparável = área dentro de ±35%
+_QUARTOS_TOL = 1        # ... e quartos com diferença de no máximo 1
 
 
 @dataclass
@@ -56,36 +74,34 @@ class Imovel:
         return normalizar_texto(f"{self.titulo} {self.descricao}")
 
 
-def _faixa_metragem(area: Optional[float]) -> str:
-    if area is None:
-        return "area_?"
-    # bandas até 350 pra imóvel comum; acima disso pra alto padrão
-    # (Jardim Acapulco/Riviera tem casa de 400 a 900+ m² - sem essas
-    # faixas tudo cai no mesmo balde e a mediana perde o sentido).
-    for lim, nome in [(50, "0-50"), (80, "50-80"), (120, "80-120"),
-                      (200, "120-200"), (350, "200-350"), (500, "350-500"),
-                      (800, "500-800"), (1200, "800-1200")]:
-        if area < lim:
-            return nome
-    return "1200+"
+@dataclass
+class Comp:
+    """Comparável enxuto: o que basta para compor a mediana de um grupo."""
+    grupo: str
+    area: Optional[float]
+    quartos: Optional[int]
+    preco_m2: float
+    url: str = ""
 
 
-def _faixa_quartos(q: Optional[int]) -> str:
-    if q is None:
-        return "q?"
-    if q >= 4:
-        return "4+"
-    return str(q)
+def canon_bairro(s: str) -> str:
+    """normaliza + expande abreviações comuns de bairro."""
+    s = normalizar_texto(s)
+    for pat, rep in _BAIRRO_ABREV:
+        s = re.sub(pat, rep, s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _chave(cidade: str, bairro: str, tipo: str) -> str:
+    return "|".join([
+        normalizar_texto(cidade),
+        canon_bairro(bairro),
+        normalizar_texto(tipo) or "tipo?",
+    ])
 
 
 def chave_grupo(im: Imovel) -> str:
-    return "|".join([
-        normalizar_texto(im.cidade),
-        normalizar_texto(im.bairro),
-        normalizar_texto(im.tipo) or "tipo?",
-        _faixa_metragem(im.area),
-        _faixa_quartos(im.quartos),
-    ])
+    return _chave(im.cidade, im.bairro, im.tipo)
 
 
 def detectar_keywords(im: Imovel) -> list:
@@ -93,12 +109,32 @@ def detectar_keywords(im: Imovel) -> list:
     return [kw for kw in PALAVRAS_CHAVE if kw in texto]
 
 
+def comps_do_historico(rows) -> list:
+    """
+    rows: iterável de (url, cidade, bairro, tipo, area, quartos, preco_m2) vindo
+    do banco. Vira uma lista de Comp para engrossar a amostra das medianas.
+    """
+    out = []
+    for url, cidade, bairro, tipo, area, quartos, preco_m2 in rows:
+        if not (area and preco_m2 and area > 0):
+            continue
+        out.append(Comp(_chave(cidade or "", bairro or "", tipo or ""),
+                        float(area), int(quartos) if quartos else None,
+                        float(preco_m2), url or ""))
+    return out
+
+
 def _chaves_dedupe(im: Imovel):
-    """URL + "impressão digital física" do imóvel."""
+    """
+    URL + "impressão digital" do imóvel. A digital inclui um trecho do título
+    normalizado: reanúncio com outro código repete o texto; unidades diferentes
+    no mesmo prédio (mesma metragem/preço) têm títulos distintos e NÃO colapsam.
+    """
     chaves = ["u:" + im.url.rstrip("/")]
     if im.preco and im.area:
-        chaves.append("f:%s|%s|%d|%d|%d" % (
-            normalizar_texto(im.bairro), normalizar_texto(im.tipo),
+        titulo_norm = normalizar_texto(im.titulo or "")[:40]
+        chaves.append("f:%s|%s|%s|%d|%d|%d" % (
+            canon_bairro(im.bairro), normalizar_texto(im.tipo), titulo_norm,
             round(im.preco / 1000), round(im.area), im.quartos or 0,
         ))
     return chaves
@@ -107,8 +143,7 @@ def _chaves_dedupe(im: Imovel):
 def _dedupe(imoveis):
     """
     Colapsa o MESMO imóvel contando 2x: URL repetida (paginação) e o mesmo
-    imóvel reanunciado com outro código (mesmo bairro/tipo/preço/área/quartos).
-    Sem isso o grupo infla e sai alerta duplicado. Mantém o de descrição maior.
+    imóvel reanunciado com outro código. Mantém o de descrição maior.
     """
     dono = {}          # chave -> índice do representante em `saida`
     saida = []
@@ -127,19 +162,36 @@ def _dedupe(imoveis):
     return saida
 
 
-def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
-             preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000):
+def _comparaveis(im: Imovel, pool):
     """
-    min_amostra: mínimo de comparáveis no grupo para confiar na mediana.
+    Do mesmo grupo, filtra por área dentro de ±_AREA_TOL e quartos com
+    diferença <= _QUARTOS_TOL. O próprio imóvel entra na amostra (estabiliza
+    grupos pequenos e deixa a mediana levemente conservadora).
+    """
+    if not im.area:
+        return []
+    lo, hi = im.area * (1 - _AREA_TOL), im.area * (1 + _AREA_TOL)
+    out = []
+    for c in pool:
+        if c.area is None or not (lo <= c.area <= hi):
+            continue
+        if im.quartos and c.quartos and abs(c.quartos - im.quartos) > _QUARTOS_TOL:
+            continue
+        out.append(c.preco_m2)
+    return out
+
+
+def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
+             preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000,
+             historico=None):
+    """
+    min_amostra: mínimo de comparáveis para confiar na mediana.
     limiar_desconto: % abaixo da mediana para virar candidato (0.30 = 30%).
     exigir_keyword: se True, só alerta imóvel barato QUE TAMBÉM tem palavra-chave.
-                    Reduz muito o ruído; deixe False no começo para calibrar.
-    preco_min / preco_m2_min / preco_m2_max: piso e teto de sanidade. Descarta
-                    parse errado (ex.: pegou IPTU "R$ 1.300" no lugar do preço,
-                    ou m² absurdo) antes que vire um alerta "100% abaixo".
+    preco_min / preco_m2_min / preco_m2_max: piso e teto de sanidade.
+    historico: lista de Comp (ver comps_do_historico) para engrossar a amostra.
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
     """
-    # 0. tira duplicata antes de tudo (senão infla o grupo)
     imoveis = _dedupe(imoveis)
 
     # 1. preço/m² individual (com filtro de sanidade)
@@ -154,31 +206,39 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
         im.grupo = chave_grupo(im)
         validos.append(im)
 
-    # 2. mediana por grupo
-    grupos = {}
+    # 2. pool de comparáveis por grupo: os válidos desta raspagem + histórico.
+    #    o histórico não recontabiliza um imóvel que também está na raspagem atual.
+    pool = {}
+    urls_atuais = set()
     for im in validos:
-        grupos.setdefault(im.grupo, []).append(im.preco_m2)
+        urls_atuais.add(im.url.rstrip("/"))
+        pool.setdefault(im.grupo, []).append(
+            Comp(im.grupo, im.area, im.quartos, im.preco_m2, im.url))
+    for c in (historico or []):
+        if not (preco_m2_min <= c.preco_m2 <= preco_m2_max):
+            continue
+        if c.url and c.url.rstrip("/") in urls_atuais:
+            continue
+        pool.setdefault(c.grupo, []).append(c)
 
-    medianas = {g: (median(v), len(v)) for g, v in grupos.items()}
-
-    # 3 + 4. desconto vs mediana + keywords
+    # 3 + 4. desconto vs mediana dos comparáveis + keywords
     oportunidades = []
     for im in validos:
-        med, n = medianas[im.grupo]
-        im.mediana_grupo, im.n_grupo = med, n
+        pm2s = _comparaveis(im, pool.get(im.grupo, []))
+        n = len(pm2s)
+        im.n_grupo = n
         im.keywords = detectar_keywords(im)
 
         barato = False
-        if n >= min_amostra and med > 0:
-            im.pct_abaixo = (med - im.preco_m2) / med
-            barato = im.pct_abaixo >= limiar_desconto
+        if n >= min_amostra:
+            med = median(pm2s)
+            im.mediana_grupo = med
+            if med > 0:
+                im.pct_abaixo = (med - im.preco_m2) / med
+                barato = im.pct_abaixo >= limiar_desconto
 
         tem_kw = len(im.keywords) > 0
 
-        # regra de alerta:
-        #  - barato o suficiente (com amostra confiável), OU
-        #  - tem palavra-chave forte de espólio/urgência
-        #  - se exigir_keyword=True, precisa das duas
         if exigir_keyword:
             alerta = barato and tem_kw
         else:

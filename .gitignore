@@ -4,6 +4,9 @@ config.yaml
 # banco de dados local
 *.db
 
+# logs
+*.log
+
 # Python
 __pycache__/
 *.py[cod]

@@ -5,20 +5,29 @@ config.yaml com seus próprios seletores CSS. Assim você adiciona uma nova
 imobiliária editando o YAML, sem mexer no código.
 
 Educado por padrão: User-Agent identificável, delay entre requisições,
-respeita um limite de páginas. Ajuste no config.
+limite de páginas e checagem de robots.txt. Ajuste no config.
 """
 import re
 import time
+import urllib.robotparser
+from urllib.parse import urljoin, urlsplit
+
 import requests
 import urllib3
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+
 from analyzer import Imovel
 from parser import (parse_preco, parse_area, parse_area_construida,
                     parse_quartos, parse_vagas, parse_tipo, parse_local,
                     titulo_curto)
+import log
+
+_log = log.get(__name__)
 
 DEFAULT_UA = "Mozilla/5.0 (compatible; ImovelBot/1.0; monitoramento de anuncios)"
+
+# cache de robots.txt por domínio: netloc -> RobotFileParser (ou None se falhou)
+_ROBOTS_CACHE = {}
 
 
 def _texto(node):
@@ -31,6 +40,30 @@ def _selec(card, seletor):
         return ""
     node = card.select_one(seletor)
     return _texto(node)
+
+
+def _robots_permite(sess, url, user_agent, timeout=10):
+    """
+    True se o robots.txt do domínio permite baixar `url` para o nosso UA.
+    Fail-open: se o robots.txt não existe ou não dá pra ler, assume permitido.
+    """
+    partes = urlsplit(url)
+    base = f"{partes.scheme}://{partes.netloc}"
+    if base not in _ROBOTS_CACHE:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            r = sess.get(urljoin(base, "/robots.txt"), timeout=timeout)
+            if r.status_code == 200 and r.text.strip():
+                rp.parse(r.text.splitlines())
+            else:
+                rp = None
+        except Exception:
+            rp = None
+        _ROBOTS_CACHE[base] = rp
+    rp = _ROBOTS_CACHE[base]
+    if rp is None:
+        return True
+    return rp.can_fetch(user_agent, url) or rp.can_fetch("*", url)
 
 
 def _monta_url_pagina(tmpl, p, pular_param_pagina_1):
@@ -77,7 +110,7 @@ def _enriquecer_com_detalhe(im, sess, sel_det, timeout, verify_ssl):
     try:
         r = _baixar(sess, im.url, timeout, verify_ssl, tentativas=2)
     except Exception as e:
-        print(f"     [i] detalhe falhou ({im.url[-40:]}): {e}")
+        _log.info("     [i] detalhe falhou (%s): %s", im.url[-40:], e)
         return
     soup = BeautifulSoup(r.text, "lxml")
     for tag in soup(["script", "style", "nav", "header", "footer"]):
@@ -103,7 +136,7 @@ def _enriquecer_com_detalhe(im, sess, sel_det, timeout, verify_ssl):
 
 
 def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
-                verify_ssl=True, delay_detalhe=None):
+                verify_ssl=True, delay_detalhe=None, respeitar_robots=True):
     """
     site_cfg: dict do config.yaml para UMA imobiliária.
     Retorna lista de Imovel (ainda sem análise).
@@ -115,18 +148,27 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       detalhe: true              -> abre a página de cada imóvel p/ pegar a área
                                     CONSTRUÍDA e a descrição inteira (mais lento).
       seletores.detalhe: {...}   -> seletores da página de detalhe (opcional).
+      respeitar_robots: false    -> ignora o robots.txt DESTE site.
+      verificar_ssl: false       -> não valida o certificado TLS DESTE site.
     """
     sess = session or requests.Session()
     sess.headers.update({"User-Agent": site_cfg.get("user_agent", DEFAULT_UA)})
+    ua = sess.headers["User-Agent"]
     verify_ssl = site_cfg.get("verificar_ssl", verify_ssl)
     if not verify_ssl:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    respeitar_robots = site_cfg.get("respeitar_robots", respeitar_robots)
     delay_detalhe = delay_detalhe if delay_detalhe is not None else delay
 
     nome = site_cfg["nome"]
     base = site_cfg["base_url"]
     url_tmpl = site_cfg["listagem_url"]
-    sel = site_cfg["seletores"]
+    sel = site_cfg.get("seletores") or {}
+    card_sel = sel.get("card")
+    if not card_sel:
+        _log.warning("  [!] %s: sem 'seletores.card' no config -> site ignorado.", nome)
+        return []
+    link_sel = sel.get("link") or "a"
     sel_det = sel.get("detalhe", {}) or {}
     cidade_cfg = site_cfg.get("cidade", "")
     cidade_auto = site_cfg.get("cidade_auto", False)
@@ -141,22 +183,33 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
     vistos = set()
     for p in range(1, paginas + 1):
         url = _monta_url_pagina(url_tmpl, p, pular_p1)
+
+        if respeitar_robots and not _robots_permite(sess, url, ua):
+            _log.warning("  [robots] %s: %s bloqueado pelo robots.txt -> pulando. "
+                         "(use 'respeitar_robots: false' para ignorar)", nome, url)
+            break
+
         try:
             r = _baixar(sess, url, timeout, verify_ssl, tentativas=3)
         except Exception as e:
-            print(f"  [!] {nome} pag {p}: erro ao baixar ({e})")
+            _log.warning("  [!] %s pag %s: erro ao baixar (%s)", nome, p, e)
             break
 
         soup = BeautifulSoup(r.text, "lxml")
-        cards = soup.select(sel["card"])
+        try:
+            cards = soup.select(card_sel)
+        except Exception as e:
+            _log.warning("  [!] %s: seletor de card inválido (%r): %s", nome, card_sel, e)
+            break
         if not cards:
-            print(f"  [i] {nome} pag {p}: nenhum card encontrado (seletor '{sel['card']}').")
+            _log.info("  [i] %s pag %s: nenhum card encontrado (seletor %r).",
+                      nome, p, card_sel)
             break
 
         novos_na_pagina = 0
         for card in cards:
           try:  # um card com HTML estranho não pode derrubar o site inteiro
-            link_node = card.select_one(sel.get("link", "a"))
+            link_node = card.select_one(link_sel)
             href = link_node.get("href") if link_node else None
             # alguns layouts (ex.: Kenlo) fazem o próprio card ser um <a>;
             # select_one só olha descendentes, então caímos aqui.
@@ -220,9 +273,10 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
 
             achados.append(im)
           except Exception as e:
-            print(f"     [i] {nome}: card ignorado ({type(e).__name__}: {e})")
+            _log.info("     [i] %s: card ignorado (%s: %s)", nome, type(e).__name__, e)
 
-        print(f"  [ok] {nome} pag {p}: {len(cards)} cards ({novos_na_pagina} novos)")
+        _log.info("  [ok] %s pag %s: %s cards (%s novos)",
+                  nome, p, len(cards), novos_na_pagina)
         if novos_na_pagina == 0:      # paginou além do fim -> para
             break
         time.sleep(delay)
@@ -236,6 +290,7 @@ def raspar_todos(config, max_paginas=None):
     scfg = config.get("scraper", {})
     delay = scfg.get("delay_segundos", 2.0)
     delay_detalhe = scfg.get("delay_detalhe_segundos", min(delay, 1.5))
+    respeitar_robots = scfg.get("respeitar_robots", True)
     # em rede com proxy que intercepta TLS (certificado próprio), o requests
     # rejeita a conexão. verificar_ssl: false desliga a checagem (por site ou global).
     verify_ssl = scfg.get("verificar_ssl", True)
@@ -245,11 +300,12 @@ def raspar_todos(config, max_paginas=None):
     for site in config.get("sites", []):
         if not site.get("ativo", True):
             continue
-        print(f"> Raspando: {site['nome']}")
+        _log.info("> Raspando: %s", site["nome"])
         try:
             todos.extend(raspar_site(site, delay=delay, max_paginas=max_paginas,
                                      session=sess, verify_ssl=verify_ssl,
-                                     delay_detalhe=delay_detalhe))
+                                     delay_detalhe=delay_detalhe,
+                                     respeitar_robots=respeitar_robots))
         except Exception as e:
-            print(f"  [!] falha geral em {site['nome']}: {e}")
+            _log.warning("  [!] falha geral em %s: %s", site["nome"], e)
     return todos
