@@ -16,7 +16,9 @@ class FakeSession:
     def get(self, url, **kwargs):
         if url.endswith("/robots.txt"):
             return SimpleNamespace(status_code=404, text="")
-        return SimpleNamespace(url="https://nova.test", text='<a href="/imoveis/venda">Comprar imóveis</a>',
+        return SimpleNamespace(url="https://nova.test", text=(
+            '<a href="/blog/quando-comprar-imovel">Comprar imóvel</a>'
+            '<a href="/imoveis/venda">Comprar imóveis</a>'),
                                raise_for_status=lambda: None)
 
 

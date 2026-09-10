@@ -1,6 +1,7 @@
 """Descobre imobiliárias públicas por cidade e prepara uma fila de integração."""
 import argparse
 import json
+import re
 import time
 import urllib.robotparser
 from datetime import datetime, timezone
@@ -26,6 +27,8 @@ RELACOES_OSM = {
 }
 CHAVES_SITE = ("website", "contact:website", "url")
 TERMOS_VENDA = ("venda", "comprar", "imoveis", "imóveis", "properties")
+TERMOS_LISTAGEM = ("/imoveis", "/imóveis", "/busca", "/buscar", "pesquisa-de-imoveis")
+TERMOS_CONTEUDO = ("/blog", "/noticia", "/artigo", "/news")
 
 
 def _url_site(tags):
@@ -80,10 +83,20 @@ def _verificar_site(session, url):
         candidatos = []
         for link in soup.select("a[href]"):
             href = urljoin(resposta.url, link.get("href"))
-            texto = (link.get_text(" ", strip=True) + " " + href).lower()
-            if _dominio(href) == _dominio(resposta.url) and any(t in texto for t in TERMOS_VENDA):
-                candidatos.append(href)
-        return "novo_site_permitido", next(iter(dict.fromkeys(candidatos)), resposta.url)
+            texto = link.get_text(" ", strip=True).lower()
+            href_norm = href.lower()
+            if _dominio(href) != _dominio(resposta.url):
+                continue
+            pontos = sum(6 for t in TERMOS_LISTAGEM if t in href_norm)
+            pontos += sum(3 for t in TERMOS_VENDA if t in href_norm)
+            pontos += sum(2 for t in TERMOS_VENDA if t in texto)
+            pontos -= sum(10 for t in TERMOS_CONTEUDO if t in href_norm)
+            if re.search(r"/20\d{2}/\d{2}/", urlsplit(href_norm).path):
+                pontos -= 10
+            if pontos > 0:
+                candidatos.append((pontos, href))
+        candidatos.sort(key=lambda item: item[0], reverse=True)
+        return "novo_site_permitido", candidatos[0][1] if candidatos else resposta.url
     except (requests.RequestException, ValueError) as exc:
         return "indisponivel", type(exc).__name__
 
