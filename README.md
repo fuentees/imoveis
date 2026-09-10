@@ -158,3 +158,9 @@ nenhuma oportunidade nova passou nos filtros ou todas já foram avisadas.
 Para executar manualmente, use Run workflow; `max_paginas=0` usa os limites do
 arquivo de configuração. Para testar localmente sem enviar mensagens:
 `python main.py --config config.example.yaml --once --dry-run --max-paginas 1`.
+
+O workflow `descobrir-fontes` roda toda quarta-feira e consulta imobiliárias
+cadastradas publicamente no OpenStreetMap. Ele elimina domínios já monitorados,
+respeita `robots.txt`, verifica o site e gera uma fila com páginas de venda
+candidatas. A fila fica como artefato da execução por 30 dias; uma fonte só é
+ativada depois que seus campos forem validados.

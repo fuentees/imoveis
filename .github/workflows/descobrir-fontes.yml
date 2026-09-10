@@ -1,0 +1,36 @@
+name: descobrir-fontes
+
+on:
+  schedule:
+    - cron: "43 11 * * 3"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  descobrir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Procura e verifica novas imobiliárias
+        run: python tools/descobrir_fontes.py
+      - name: Publica resumo
+        if: always()
+        run: cat fontes-descobertas.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Guarda fila para integração
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fontes-descobertas-${{ github.run_id }}
+          path: |
+            fontes-descobertas.json
+            fontes-descobertas.md
+          retention-days: 30
+          if-no-files-found: error

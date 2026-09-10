@@ -24,3 +24,5 @@ env/
 
 relatorio*.json
 relatorio*.json.tmp
+fontes-descobertas.json
+fontes-descobertas.md

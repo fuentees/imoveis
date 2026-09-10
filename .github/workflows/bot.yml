@@ -5,7 +5,7 @@ on:
     - cron: "17 */3 * * *"      # a cada 3h (UTC); o GitHub pode atrasar alguns minutos
   push:
     branches: [main]
-    paths: ["*.py", "tools/**", "config.example.yaml", "requirements*.txt", ".github/workflows/bot.yml"]
+    paths: ["*.py", "tools/resumo_ciclo.py", "tools/validar_db.py", "config.example.yaml", "requirements*.txt", ".github/workflows/bot.yml"]
   workflow_dispatch:
     inputs:
       max_paginas:
