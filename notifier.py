@@ -10,6 +10,7 @@ Como obter as credenciais:
     e procure "chat":{"id": ...}.  (ou use @userinfobot)
 """
 import html
+import time
 import requests
 
 import log
@@ -24,22 +25,34 @@ class Telegram:
         self.base = f"https://api.telegram.org/bot{token}"
 
     def enviar(self, texto_html: str) -> bool:
-        try:
-            # json= (não data=) pra o booleano ir como booleano de verdade;
-            # como string "false" a API tratava como "ativar" e sumia com a
-            # prévia do link (a foto do imóvel).
-            r = requests.post(f"{self.base}/sendMessage", json={
-                "chat_id": self.chat_id,
-                "text": texto_html,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": False,
-            }, timeout=20)
-            if r.status_code != 200:
+        # O Telegram impõe um limite por chat. Quando ele informa retry_after,
+        # aguardar esse período preserva o alerta em vez de descartá-lo.
+        for tentativa in range(3):
+            try:
+                # json= (não data=) pra o booleano ir como booleano de verdade;
+                # como string "false" a API tratava como "ativar" e sumia com a
+                # prévia do link (a foto do imóvel).
+                r = requests.post(f"{self.base}/sendMessage", json={
+                    "chat_id": self.chat_id,
+                    "text": texto_html,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": False,
+                }, timeout=20)
+                corpo = r.json()
+                if r.status_code == 200 and corpo.get("ok") is True:
+                    return True
+                retry_after = corpo.get("parameters", {}).get("retry_after")
+                if r.status_code == 429 and retry_after and tentativa < 2:
+                    espera = min(max(int(retry_after) + 1, 1), 90)
+                    _log.info("  Telegram pediu uma pausa de %ss; tentando novamente.", espera)
+                    time.sleep(espera)
+                    continue
                 _log.warning("  [!] Telegram respondeu %s: %s", r.status_code, r.text[:200])
-            return r.status_code == 200 and r.json().get("ok") is True
-        except Exception as e:
-            _log.warning("  [!] Falha ao enviar Telegram: %s", type(e).__name__)
-            return False
+                return False
+            except Exception as e:
+                _log.warning("  [!] Falha ao enviar Telegram: %s", type(e).__name__)
+                return False
+        return False
 
 
 # palavra-chave normalizada -> forma legível (com acento) pro alerta

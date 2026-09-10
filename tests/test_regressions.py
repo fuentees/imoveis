@@ -106,6 +106,21 @@ def test_telegram_nao_expoe_token(monkeypatch, caplog):
     assert "SEGREDO" not in caplog.text
 
 
+def test_telegram_aguarda_e_repete_apos_429(monkeypatch):
+    respostas = iter([
+        SimpleNamespace(status_code=429, text="limite", json=lambda: {
+            "ok": False, "parameters": {"retry_after": 2}}),
+        SimpleNamespace(status_code=200, text="ok", json=lambda: {"ok": True}),
+    ])
+    post = Mock(side_effect=lambda *a, **k: next(respostas))
+    sleep = Mock()
+    monkeypatch.setattr("notifier.requests.post", post)
+    monkeypatch.setattr("notifier.time.sleep", sleep)
+    assert Telegram("fake", "123").enviar("teste")
+    assert post.call_count == 2
+    sleep.assert_called_once_with(3)
+
+
 def test_config_exemplo_valida():
     from pathlib import Path
     validar_config(yaml.safe_load(Path("config.example.yaml").read_text(encoding="utf-8")))
