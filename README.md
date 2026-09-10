@@ -70,19 +70,18 @@ console e pra `bot.log` (troque com `--log-file` ou `--log-file ""`).
 
 Já calibrado para o litoral sul de SP a partir de dry-runs reais:
 
-- `min_amostra: 6` — abaixo disso a mediana ficava instável em bairro de nicho
+- `min_amostra: 10` — abaixo disso a mediana fica instável em bairro de nicho
   (casas de 670 m², coberturas). Grupos menores não geram alerta de preço.
 - `max_alertas_por_ciclo: 10` — evita uma enxurrada de mensagens; os candidatos
   adiados continuam na fila e são enviados nos ciclos seguintes.
-- **Palavra-chave só dispara sozinha se for "forte"** (espólio, inventário,
-  herança…). `partilha`, `desocupado` e afins entram em `KEYWORDS_FRACAS`
-  (`analyzer.py`) — aparecem em rodapé jurídico de site, então só contam quando
-  o imóvel também está abaixo do mercado.
+- **Palavra-chave não dispara sozinha.** Espólio, inventário, herança e urgência
+  aumentam a prioridade somente depois que o preço baixo foi comprovado contra
+  pelo menos dez comparáveis. Isso evita anúncios comuns com texto publicitário.
 - Palavra-chave é ignorada se o imóvel está **acima** da mediana do grupo.
 - `Paulumar` roda com `detalhe: true` — o card e a página divergiam na área.
 
-Para apertar mais: suba `limiar_desconto` (0.30 → 0.40) ou ligue
-`exigir_keyword: true`. Ajuste `PALAVRAS_CHAVE` ao vocabulário da sua região.
+O exemplo exige deságio de pelo menos 40%. Para receber exclusivamente imóveis
+baratos que também mencionem uma motivação forte, ligue `exigir_keyword: true`.
 
 ## O alerta no Telegram
 

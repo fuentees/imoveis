@@ -229,12 +229,15 @@ def _descreve_criterio(im: Imovel) -> str:
 
 
 def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
+             permitir_keyword_sem_desconto=False,
              preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000,
              historico=None):
     """
     min_amostra: mínimo de comparáveis para confiar na mediana.
     limiar_desconto: % abaixo da mediana para virar candidato (0.30 = 30%).
     exigir_keyword: se True, só alerta imóvel barato QUE TAMBÉM tem palavra-chave.
+    permitir_keyword_sem_desconto: compatibilidade opcional; permite palavra forte
+        disparar sem deságio comprovado. O padrão False evita falsos positivos.
     preco_min / preco_m2_min / preco_m2_max: piso e teto de sanidade.
     historico: lista de Comp (ver comps_do_historico) para engrossar a amostra.
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
@@ -285,9 +288,8 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
                 barato = im.pct_abaixo >= limiar_desconto
                 im.criterio = _descreve_criterio(im)
 
-        # keyword como GATILHO só vale se: (a) há palavra forte (não só rodapé) e
-        # (b) o imóvel não está claramente acima do mercado (keyword + preço
-        # salgado quase sempre é texto de rodapé, não vendedor com pressa).
+        # Palavra-chave reforça a prioridade, mas por padrão não substitui a
+        # comprovação de preço baixo contra uma amostra comparável.
         tem_kw = len(im.keywords) > 0
         tem_kw_forte = any(k not in KEYWORDS_FRACAS for k in im.keywords)
         acima_do_mercado = bool(im.mediana_grupo) and im.preco_m2 > im.mediana_grupo * 1.15
@@ -296,7 +298,7 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
         if exigir_keyword:
             alerta = barato and kw_gatilho
         else:
-            alerta = barato or kw_gatilho
+            alerta = barato or (permitir_keyword_sem_desconto and kw_gatilho)
 
         if alerta:
             im.score = _score(im, barato, tem_kw)

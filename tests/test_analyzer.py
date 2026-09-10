@@ -100,12 +100,18 @@ def test_analisar_historico_nao_reconta_imovel_ja_na_raspagem():
     assert op.mediana_grupo == 8000.0
 
 
-def test_analisar_keyword_dispara_sem_ser_barato():
+def test_analisar_keyword_nao_dispara_sem_desconto_comprovado():
     im = mk(url="http://x/kw", desc="Vende-se por motivo de espólio, documentação ok",
             area=120, preco=120 * 8000, quartos=3)
     ops = analisar([im], min_amostra=4, limiar_desconto=0.30)
+    assert ops == []
+
+
+def test_keyword_sem_desconto_exige_opt_in():
+    im = mk(url="http://x/kw", desc="Vende-se por motivo de espólio",
+            area=120, preco=120 * 8000, quartos=3)
+    ops = analisar([im], permitir_keyword_sem_desconto=True)
     assert [o.url for o in ops] == ["http://x/kw"]
-    assert "espolio" in ops[0].keywords
 
 
 def _grupo6(preco_m2=8000.0):
@@ -120,11 +126,11 @@ def test_keyword_ignorada_quando_imovel_acima_do_mercado():
     assert "http://x/caro" not in [o.url for o in ops]
 
 
-def test_keyword_vale_quando_imovel_no_mercado():
+def test_keyword_no_mercado_nao_basta():
     kw = mk(url="http://x/kw", titulo="Ck", desc="imóvel de partilha, aceito proposta",
             area=320, preco=320 * 7800, quartos=3)          # ~no mercado, não é "barato"
     ops = analisar(_grupo6() + [kw], min_amostra=6, limiar_desconto=0.30)
-    assert "http://x/kw" in [o.url for o in ops]
+    assert "http://x/kw" not in [o.url for o in ops]
 
 
 def test_partilha_sozinha_nao_dispara():
@@ -133,10 +139,10 @@ def test_partilha_sozinha_nao_dispara():
     assert analisar([im], min_amostra=6) == []
 
 
-def test_partilha_com_palavra_forte_dispara():
+def test_partilha_com_palavra_forte_sem_desconto_nao_dispara():
     im = mk(url="http://x/forte", desc="Imóvel de espólio, partilha de bens, aceito proposta",
             area=200, preco=200 * 6000, quartos=3)
-    assert "http://x/forte" in [o.url for o in analisar([im], min_amostra=6)]
+    assert analisar([im], min_amostra=6) == []
 
 
 def test_criterio_descreve_a_base_de_comparacao():

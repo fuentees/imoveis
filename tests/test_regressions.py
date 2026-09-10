@@ -68,13 +68,14 @@ def test_ciclo_so_marca_envio_confirmado(sucesso, monkeypatch):
     tg.enviar.return_value = sucesso
     try:
         if sucesso:
-            assert rodar_ciclo({}, st, tg) == 1
+            cfg = {"analise": {"permitir_keyword_sem_desconto": True}}
+            assert rodar_ciclo(cfg, st, tg) == 1
             assert st.info_alerta(im.url)[0] == 500000
-            assert rodar_ciclo({}, st, tg) == 0
+            assert rodar_ciclo(cfg, st, tg) == 0
             assert tg.enviar.call_count == 1
         else:
             with pytest.raises(RuntimeError, match="Falha no envio"):
-                rodar_ciclo({}, st, tg)
+                rodar_ciclo({"analise": {"permitir_keyword_sem_desconto": True}}, st, tg)
             assert not st.ja_alertado(im.url)
     finally:
         st.fechar()
@@ -85,7 +86,8 @@ def test_dry_run_nao_envia_nem_marca(monkeypatch):
     tg = Mock()
     st = Storage(":memory:")
     try:
-        assert rodar_ciclo({}, st, tg, dry_run=True) == 1
+        cfg = {"analise": {"permitir_keyword_sem_desconto": True}}
+        assert rodar_ciclo(cfg, st, tg, dry_run=True) == 1
         tg.enviar.assert_not_called()
         assert not st.ja_alertado("https://x/1")
     finally:
@@ -100,7 +102,8 @@ def test_limita_alertas_e_deixa_restante_para_proximo_ciclo(monkeypatch):
     monkeypatch.setattr("main.time.sleep", lambda _: None)
     tg = Mock(); tg.enviar.return_value = True
     st = Storage(":memory:")
-    cfg = {"analise": {"max_alertas_por_ciclo": 2}}
+    cfg = {"analise": {"max_alertas_por_ciclo": 2,
+                        "permitir_keyword_sem_desconto": True}}
     try:
         assert rodar_ciclo(cfg, st, tg) == 3
         assert tg.enviar.call_count == 2

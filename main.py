@@ -87,6 +87,9 @@ def validar_config(config):
             if (type(value) not in (int, float) or not math.isfinite(value)
                     or value < low or (high is not None and value >= high)):
                 raise ValueError(f"Valor inválido: {section}.{key}")
+    for key in ("exigir_keyword", "permitir_keyword_sem_desconto"):
+        if key in config.get("analise", {}) and type(config["analise"][key]) is not bool:
+            raise ValueError(f"Valor inválido: analise.{key}")
     a = config.get("analise", {})
     if a.get("preco_m2_min", 300) >= a.get("preco_m2_max", 60000):
         raise ValueError("preco_m2_min deve ser menor que preco_m2_max.")
@@ -122,6 +125,7 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         min_amostra=a.get("min_amostra", 4),
         limiar_desconto=a.get("limiar_desconto", 0.30),
         exigir_keyword=a.get("exigir_keyword", False),
+        permitir_keyword_sem_desconto=a.get("permitir_keyword_sem_desconto", False),
         preco_min=a.get("preco_min", 50_000),
         preco_m2_min=a.get("preco_m2_min", 300),
         preco_m2_max=a.get("preco_m2_max", 60_000),

@@ -10,9 +10,10 @@ scraper:
   verificar_ssl: true
   respeitar_robots: true
 analise:
-  min_amostra: 6
-  limiar_desconto: 0.3
+  min_amostra: 10
+  limiar_desconto: 0.4
   exigir_keyword: false
+  permitir_keyword_sem_desconto: false
   preco_min: 50000
   preco_m2_min: 300
   preco_m2_max: 60000
