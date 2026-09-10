@@ -190,7 +190,7 @@ def parse_area_construida(texto: str):
         depois = t[mm.end():mm.end() + 20]
         if re.search(r"terreno|lote|area total", antes + depois):
             continue
-        if re.search(r"r\$|valor do m|pre[çc]o|/\s*$", antes):
+        if re.search(r"r\$\s*$|valor do m\s*$|pre[çc]o\s*[:=]?\s*$|/\s*$", antes):
             continue
         v = _num_br(mm.group(1))
         if v and 5 <= v <= 20000:      # área plausível de imóvel
@@ -254,7 +254,7 @@ def _limpa_local(s: str):
     if len(s.split()) > 5:
         return ""
     baixo = _strip_accents(s.lower())
-    if baixo in ("sp", "brasil", "sao paulo") or "imovel" in baixo or "venda" in baixo:
+    if baixo in ("sp", "brasil") or "imovel" in baixo or "venda" in baixo:
         return ""
     return s
 

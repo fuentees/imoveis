@@ -5,7 +5,6 @@ except (AttributeError, ValueError):
     pass
 from scraper import raspar_todos
 from analyzer import analisar, _dedupe
-from storage import Storage
 from notifier import formatar_alerta
 
 cfg = yaml.safe_load(open("config.yaml", encoding="utf-8"))
@@ -42,15 +41,4 @@ print("\n--- alerta formatado (top1) ---")
 if ops:
     print(formatar_alerta(ops[0]))
 
-st = Storage("imoveis.db")
-for im in ims:
-    if im.preco and im.area:
-        st.upsert_imovel(im)
-n = st.con.execute("SELECT COUNT(*) FROM imoveis").fetchone()[0]
-marc = "n/a"
-if ops:
-    st.marcar_alertado(ops[0].url, ops[0].score)
-    marc = st.ja_alertado(ops[0].url)
-st.fechar()
-print(f"\nstorage: {n} linhas | ja_alertado(top1): {marc}")
-print("FIM")
+print("FIM (diagnóstico sem alterar banco ou alertas)")

@@ -10,7 +10,7 @@ limite de páginas e checagem de robots.txt. Ajuste no config.
 import re
 import time
 import urllib.robotparser
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import requests
 import urllib3
@@ -19,12 +19,12 @@ from bs4 import BeautifulSoup
 from analyzer import Imovel
 from parser import (parse_preco, parse_area, parse_area_construida,
                     parse_quartos, parse_vagas, parse_tipo, parse_local,
-                    titulo_curto)
+                    titulo_curto, normalizar_texto)
 import log
 
 _log = log.get(__name__)
 
-DEFAULT_UA = "Mozilla/5.0 (compatible; ImovelBot/1.0; monitoramento de anuncios)"
+DEFAULT_UA = "ImovelBot/1.0 (monitoramento de anuncios)"
 
 # cache de robots.txt por domínio: netloc -> RobotFileParser (ou None se falhou)
 _ROBOTS_CACHE = {}
@@ -38,6 +38,9 @@ def _selec(card, seletor):
     """Aplica um seletor CSS e devolve o texto do primeiro match."""
     if not seletor:
         return ""
+    if isinstance(seletor, dict):
+        node = card.select_one(seletor["css"])
+        return str(node.get(seletor["atributo"], "")) if node else ""
     node = card.select_one(seletor)
     return _texto(node)
 
@@ -63,7 +66,7 @@ def _robots_permite(sess, url, user_agent, timeout=10):
     rp = _ROBOTS_CACHE[base]
     if rp is None:
         return True
-    return rp.can_fetch(user_agent, url) or rp.can_fetch("*", url)
+    return rp.can_fetch(user_agent, url)
 
 
 def _monta_url_pagina(tmpl, p, pular_param_pagina_1):
@@ -75,7 +78,9 @@ def _monta_url_pagina(tmpl, p, pular_param_pagina_1):
     if "{page}" not in tmpl:
         return tmpl
     if p == 1 and pular_param_pagina_1:
-        u = re.sub(r"[?&][^?&=]+=\{page\}", "", tmpl)      # &page={page}
+        parts = urlsplit(tmpl)
+        query = "&".join(x for x in parts.query.split("&") if "{page}" not in x)
+        u = urlunsplit(parts._replace(query=query))
         u = re.sub(r"/[^/]*\{page\}[^/]*/?", "/", u)       # /pagina-{page}/
         u = u.replace("{page}", "1").replace("?&", "?").rstrip("?&")
         return u
@@ -136,7 +141,7 @@ def _enriquecer_com_detalhe(im, sess, sel_det, timeout, verify_ssl):
 
 
 def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
-                verify_ssl=True, delay_detalhe=None, respeitar_robots=True):
+                verify_ssl=True, delay_detalhe=None, respeitar_robots=True, diagnostico=None):
     """
     site_cfg: dict do config.yaml para UMA imobiliária.
     Retorna lista de Imovel (ainda sem análise).
@@ -151,6 +156,8 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       respeitar_robots: false    -> ignora o robots.txt DESTE site.
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
     """
+    diagnostico = diagnostico if diagnostico is not None else {}
+    diagnostico.update(status="ok", paginas=0, erros=[])
     sess = session or requests.Session()
     sess.headers.update({"User-Agent": site_cfg.get("user_agent", DEFAULT_UA)})
     ua = sess.headers["User-Agent"]
@@ -187,12 +194,15 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
         if respeitar_robots and not _robots_permite(sess, url, ua):
             _log.warning("  [robots] %s: %s bloqueado pelo robots.txt -> pulando. "
                          "(use 'respeitar_robots: false' para ignorar)", nome, url)
+            diagnostico["status"] = "bloqueado_robots"
             break
 
         try:
             r = _baixar(sess, url, timeout, verify_ssl, tentativas=3)
         except Exception as e:
             _log.warning("  [!] %s pag %s: erro ao baixar (%s)", nome, p, e)
+            diagnostico["status"] = "erro_http"
+            diagnostico["erros"].append(str(e))
             break
 
         soup = BeautifulSoup(r.text, "lxml")
@@ -201,6 +211,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
         except Exception as e:
             _log.warning("  [!] %s: seletor de card inválido (%r): %s", nome, card_sel, e)
             break
+        diagnostico["paginas"] += 1
         if not cards:
             _log.info("  [i] %s pag %s: nenhum card encontrado (seletor %r).",
                       nome, p, card_sel)
@@ -218,6 +229,8 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             if not href:
                 href = card.get("data-href") or card.get("data-url")
             link = urljoin(base, href) if href else None
+            if link and urlsplit(link).scheme not in ("http", "https"):
+                continue
             if not link or link in vistos:
                 continue
             vistos.add(link)
@@ -232,10 +245,13 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             area = (parse_area(_selec(card, sel.get("area")))
                     or parse_area_construida(texto_card))
             quartos = parse_quartos(_selec(card, sel.get("quartos"))) or parse_quartos(texto_card)
-            vagas = parse_vagas(texto_card)
+            vagas = parse_vagas(_selec(card, sel.get("vagas"))) or parse_vagas(texto_card)
 
             bairro = _selec(card, sel.get("bairro"))
-            cidade = cidade_cfg
+            cidade_txt = _selec(card, sel.get("cidade"))
+            cidade = re.sub(r"\s*[-/,]\s*SP$", "", cidade_txt, flags=re.I).strip() or cidade_cfg
+            if site_cfg.get("bairro_inclui_cidade") and "," in bairro:
+                bairro, cidade = (p.strip() for p in bairro.rsplit(",", 1))
             # o seletor de bairro costuma vir "Bairro, Cidade-SP" -> separa
             if bairro and re.search(r"[-/]\s*SP\b", bairro, re.I):
                 c_b, b_b = parse_local(bairro)
@@ -249,7 +265,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
                 if cidade_auto and c_txt:
                     cidade = c_txt
 
-            tipo = tipo_padrao or parse_tipo(f"{titulo} {texto_card}")
+            tipo = tipo_padrao or parse_tipo(_selec(card, sel.get("tipo")) or f"{titulo} {texto_card}")
 
             im = Imovel(
                 url=link,
@@ -265,12 +281,15 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
                 fonte=nome,
             )
 
-            if usar_detalhe:
+            if usar_detalhe and (not respeitar_robots or _robots_permite(sess, im.url, ua)):
                 _enriquecer_com_detalhe(im, sess, sel_det, timeout, verify_ssl)
                 if not im.tipo:
                     im.tipo = parse_tipo(im.descricao)
                 time.sleep(delay_detalhe)
 
+            permitidas = site_cfg.get("cidades_permitidas", [])
+            if permitidas and normalizar_texto(im.cidade) not in {normalizar_texto(c) for c in permitidas}:
+                continue
             achados.append(im)
           except Exception as e:
             _log.info("     [i] %s: card ignorado (%s: %s)", nome, type(e).__name__, e)
@@ -281,11 +300,16 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             break
         time.sleep(delay)
 
+    if not achados and diagnostico["status"] == "ok":
+        diagnostico["status"] = "sem_anuncios"
+    elif diagnostico["status"] == "ok" and diagnostico["paginas"] == paginas and "{page}" in url_tmpl and novos_na_pagina:
+        diagnostico["status"] = "limite_paginas"
     return achados
 
 
-def raspar_todos(config, max_paginas=None):
+def raspar_todos(config, max_paginas=None, relatorio=None):
     """Percorre todas as imobiliárias ativas do config."""
+    _ROBOTS_CACHE.clear()  # regras podem mudar entre ciclos do modo loop
     todos = []
     scfg = config.get("scraper", {})
     delay = scfg.get("delay_segundos", 2.0)
@@ -296,16 +320,38 @@ def raspar_todos(config, max_paginas=None):
     verify_ssl = scfg.get("verificar_ssl", True)
     if not verify_ssl:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    if relatorio is not None:
+        relatorio["fontes"] = []
+    nomes_cidades = {normalizar_texto(c): c for c in config.get("cidades_monitoradas", [])}
+    permitidas = set(nomes_cidades)
     sess = requests.Session()
     for site in config.get("sites", []):
         if not site.get("ativo", True):
             continue
         _log.info("> Raspando: %s", site["nome"])
+        inicio = time.monotonic()
+        diag = {"nome": site["nome"], "url": site["listagem_url"], "anuncios": 0}
         try:
-            todos.extend(raspar_site(site, delay=delay, max_paginas=max_paginas,
-                                     session=sess, verify_ssl=verify_ssl,
-                                     delay_detalhe=delay_detalhe,
-                                     respeitar_robots=respeitar_robots))
+            achados = raspar_site(site, delay=delay, max_paginas=max_paginas,
+                                 session=sess, verify_ssl=verify_ssl,
+                                 delay_detalhe=delay_detalhe,
+                                 respeitar_robots=respeitar_robots, diagnostico=diag)
+            if permitidas:
+                achados = [im for im in achados if normalizar_texto(im.cidade) in permitidas]
+            for im in achados:
+                im.cidade = nomes_cidades.get(normalizar_texto(im.cidade), im.cidade)
+            diag["anuncios"] = len(achados)
+            diag["com_preco_area"] = sum(bool(im.preco and im.area) for im in achados)
+            if not achados and diag.get("status") == "ok":
+                diag["status"] = "sem_anuncios"
+            todos.extend(achados)
         except Exception as e:
+            diag.update(status="erro", erros=[str(e)])
             _log.warning("  [!] falha geral em %s: %s", site["nome"], e)
+        diag["segundos"] = round(time.monotonic() - inicio, 1)
+        if relatorio is not None:
+            relatorio["fontes"].append(diag)
+    sess.close()
+    if not todos and any(site.get("ativo", True) for site in config.get("sites", [])):
+        raise RuntimeError("Nenhum anúncio coletado dos sites ativos; confira os logs e seletores.")
     return todos

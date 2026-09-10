@@ -36,9 +36,9 @@ class Telegram:
             }, timeout=20)
             if r.status_code != 200:
                 _log.warning("  [!] Telegram respondeu %s: %s", r.status_code, r.text[:200])
-            return r.status_code == 200
+            return r.status_code == 200 and r.json().get("ok") is True
         except Exception as e:
-            _log.warning("  [!] Falha ao enviar Telegram: %s", e)
+            _log.warning("  [!] Falha ao enviar Telegram: %s", type(e).__name__)
             return False
 
 

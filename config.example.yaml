@@ -1,305 +1,753 @@
-# ==========================================================================
-# config.example.yaml  ->  copie para config.yaml e edite
-#
-# Sites já preenchidos: imobiliárias do LITORAL SUL de SP
-# (Guarujá, Mongaguá, Itanhaém, Peruíbe) + BAIRROS NOBRES / ALTO PADRÃO
-# (Jardim Acapulco, Praia do Pernambuco, Riviera de São Lourenço).
-# Pesquisados em set/2026 - confira os seletores com F12 antes de
-# confiar (layout muda).
-# ==========================================================================
-
+# Fontes verificadas em 10/09/2026. Até 20 páginas por busca/ciclo.
+# Lista e limites documentados em docs/fontes.md.
+# Credenciais via TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no GitHub Secrets.
 telegram:
-  # Deixe em branco aqui e use variáveis de ambiente (recomendado):
-  #   export TELEGRAM_TOKEN="123:ABC..."
-  #   export TELEGRAM_CHAT_ID="12345678"
-  token: ""
-  chat_id: ""
-
+  token: ''
+  chat_id: ''
 scraper:
-  delay_segundos: 2.5        # pausa entre requisições de LISTAGEM (seja educado)
-  delay_detalhe_segundos: 1.5  # pausa entre requisições de PÁGINA DE DETALHE
-                               # (baixo demais faz o WAF de alguns sites bloquear)
-  verificar_ssl: true        # ponha false se estiver atrás de proxy corporativo
-                             # que intercepta HTTPS (erro CERTIFICATE_VERIFY_FAILED).
-                             # Pode ser definido por site também: "verificar_ssl: false".
-  respeitar_robots: true     # checa o robots.txt de cada domínio antes de raspar.
-                             # Se um site legítimo for bloqueado indevidamente,
-                             # ponha false aqui (global) ou no bloco do site.
-
+  delay_segundos: 3
+  delay_detalhe_segundos: 3
+  verificar_ssl: true
+  respeitar_robots: true
 analise:
-  min_amostra: 6             # mínimo de comparáveis no grupo p/ confiar na mediana
-                             # (4-5 dá mediana instável em bairro de nicho)
-  limiar_desconto: 0.30      # 0.30 = alerta quem está 30%+ abaixo da mediana do grupo
-  exigir_keyword: false      # true = só alerta barato QUE TAMBÉM tenha palavra-chave
-                             # (comece com false p/ calibrar, depois avalie true)
-  preco_min: 50000           # ignora anúncio com preço abaixo disso (parse errado)
-  preco_m2_min: 300          # piso de sanidade p/ preço/m²
-  preco_m2_max: 60000        # teto de sanidade p/ preço/m² (litoral: ~2k a 25k)
-  historico_dias: 180        # quantos dias do banco entram na amostra da mediana
-                             # (0 = só a raspagem atual)
-  realerta_queda: 0.10       # re-alerta um imóvel já avisado só se o preço cair
-                             # pelo menos isso (0.10 = 10%) desde o último alerta
-
+  min_amostra: 6
+  limiar_desconto: 0.3
+  exigir_keyword: false
+  preco_min: 50000
+  preco_m2_min: 300
+  preco_m2_max: 60000
+  historico_dias: 180
+  realerta_queda: 0.1
 agendamento:
-  intervalo_minutos: 180     # de quanto em quanto tempo revarre (modo loop)
-
-# --------------------------------------------------------------------------
-# SITES: uma entrada por imobiliária.
-# Para descobrir/corrigir os seletores: abra o site, F12 (inspecionar), ache
-# o "card" de cada anúncio na listagem e os elementos internos.
-# Campos vazios: o bot tenta extrair do texto do card como fallback.
-#
-# Chaves opcionais por site:
-#   detalhe: true            -> abre a página de CADA imóvel p/ pegar a área
-#                               CONSTRUÍDA (não a do terreno) e a descrição
-#                               inteira (onde aparece "espólio/inventário").
-#                               Mais lento: +1 request por anúncio.
-#   seletores.detalhe: {...} -> seletores da página de detalhe (preco/area/
-#                               descricao/bairro). Se vazio, usa o texto todo.
-#   cidade_auto: true        -> extrai a cidade do próprio anúncio (agregadores
-#                               que misturam municípios). Sobrescreve "cidade".
-#   pular_param_pagina_1:true -> quando a pág. 1 é a URL "pelada" e "&page=1"
-#                               dá 404: some com o parâmetro de página na 1ª.
-# --------------------------------------------------------------------------
+  intervalo_minutos: 180
 sites:
-
-  # ---------- PERUÍBE ----------
-  - nome: "Angelo Imoveis - Peruibe"
-    ativo: true
-    base_url: "https://angeloimoveisperuibe.com.br"
-    listagem_url: "https://angeloimoveisperuibe.com.br/imoveis/a-venda/peruibe-sp?pagina={page}"
-    cidade: "Peruibe"
-    tipo_padrao: ""                 # a listagem mistura casa/apto/terreno
-    paginas: 4
-    detalhe: true                  # Peruíbe = mercado comum -> vale ler a
-                                   # descrição inteira p/ pegar "espólio" etc.
-    # plataforma: Praedium CRM (mesmo template usado por muitas imobiliárias BR)
-    seletores:
-      card: "div.thumbnail_one"
-      link: "a.property-card-link"
-      titulo: "h2.property_card_heading"
-      descricao: ""
-      preco: "div.property_pricing"
-      area: ""                      # sem seletor limpo -> fallback pega "1070 M²"
-      quartos: ""                   # idem, fallback
-      bairro: "span.property_card_address"
-
-  # ---------- MONGAGUÁ / ITANHAÉM ----------
-  - nome: "Paulumar Imoveis - Mongagua/Itanhaem"
-    ativo: true
-    base_url: "https://paulumar.com.br"
-    listagem_url: "https://paulumar.com.br/buscar/comprar/apartamento/todas-cidades/todos-bairros?negotiation=1&type=1&page={page}"
-    cidade: "Mongagua"
-    cidade_auto: true             # listagem mistura Mongaguá / Itanhaém / Praia Grande
-    pular_param_pagina_1: true    # "&page=1" dá 404; na 1ª página o parâmetro some
-    tipo_padrao: "apartamento"
-    paginas: 3
-    detalhe: true                # card e página de detalhe divergiam na área
-                                 # (240 vs 159 m²); a de detalhe tem a área útil.
-    # plataforma: Microsistec "Motor Imobiliario v8" (Next.js, SSR)
-    seletores:
-      card: "div.property-item"
-      link: "a"
-      titulo: "h2.line-clamp-2"
-      descricao: ""
-      preco: ""                     # sem classes semânticas -> tudo por fallback
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  - nome: "Imobiliaria do Julio - Mongagua/Itanhaem"
-    ativo: false                    # site em React/MUI: classes dinâmicas (jss123)
-    base_url: "https://www.imobiliariadojulio.com.br"     # quebram a cada build.
-    listagem_url: "https://www.imobiliariadojulio.com.br/buscar/mongagua-sao-paulo-brasil"
-    cidade: "Mongagua"
-    tipo_padrao: ""
-    paginas: 1
-    # plataforma: Flip CRM. Pra ativar, inspecione e ache um seletor estável
-    # (data-* ou o padrão de href "/imoveis/...-CA12577").
-    seletores:
-      card: "div.MuiCard-root"
-      link: "a"
-      titulo: ""
-      descricao: ""
-      preco: ""
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  # ---------- ITANHAÉM ----------
-  - nome: "Edson Imoveis - Itanhaem"
-    ativo: true
-    base_url: "https://www.edsonimoveis.com.br"
-    listagem_url: "https://www.edsonimoveis.com.br/"   # /imoveis exige querystring;
-    cidade: "Itanhaem"                                 # home traz ~10 cards.
-    tipo_padrao: ""
-    paginas: 1
-    seletores:
-      card: "div.property"
-      link: "a"
-      titulo: "div.info h3"
-      descricao: ""
-      preco: "div.tag.price"
-      area: "ul.additional-info li:nth-of-type(1) figure"
-      quartos: "ul.additional-info li:nth-of-type(2) figure"
-      bairro: "div.info figure"
-
-  - nome: "Imoveis Nobre - Itanhaem"
-    ativo: false                    # confirme o seletor do card na página /venda
-    base_url: "https://www.imoveisnobre.com.br"
-    listagem_url: "https://www.imoveisnobre.com.br/venda/apartamento?pagina={page}"
-    cidade: "Itanhaem"
-    tipo_padrao: "apartamento"
-    paginas: 3
-    seletores:
-      card: ""                      # TODO: F12 na listagem (home só tem card-bairros)
-      link: "a"
-      titulo: ""
-      descricao: ""
-      preco: ""
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  # ---------- GUARUJÁ ----------
-  - nome: "Mage Imoveis - Guaruja"
-    ativo: false                    # card tem todos os dados MAS não tem <a href>
-    base_url: "https://www.mageimoveis.com.br"        # (navegação por JS). Precisa
-    listagem_url: "https://www.mageimoveis.com.br/comprar/pagina-{page}/"   # de um
-    cidade: "Guaruja"               # ajuste no scraper pra montar a URL do imóvel
-    tipo_padrao: ""                 # a partir do id do card (div.resultado[id]).
-    paginas: 3
-    # plataforma: Agiliza Union Web
-    seletores:
-      card: "div.resultado"
-      link: "a"
-      titulo: "h3.tipo"
-      descricao: "div.descricao span"
-      preco: "div.valor h5"
-      area: "div.detalhe span"
-      quartos: ""
-      bairro: "h4.localizacao span"
-
-  - nome: "Imobiliaria Praias - Guaruja/Riviera"
-    ativo: false                    # portal em Vista/Ingaia: listagem via JS (SPA).
-    base_url: "https://praias.com"                    # Precisa de navegador headless
-    listagem_url: "https://praias.com/busca"          # (Playwright) ou a API interna.
-    cidade: "Guaruja"
-    tipo_padrao: ""
-    paginas: 1
-    seletores:
-      card: ""
-      link: "a"
-      titulo: ""
-      descricao: ""
-      preco: ""
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  # ==========================================================================
-  # BAIRROS NOBRES / ALTO PADRÃO
-  # Jardim Acapulco e Praia do Pernambuco (Guarujá), Riviera de São Lourenço.
-  # Preços de milhões: o "abaixo da mediana" aqui costuma ser espólio,
-  # permuta ou reforma pesada - exatamente o alvo do bot.
-  # ==========================================================================
-
-  - nome: "Susana Amorim - Jd Acapulco (alto padrao)"
-    ativo: true
-    base_url: "https://susanaamorimimoveis.com.br"
-    listagem_url: "https://susanaamorimimoveis.com.br/imoveis/a-venda/guaruja-sp/jardim-acapulco?pagina={page}"
-    cidade: "Guaruja"
-    tipo_padrao: ""
-    paginas: 3
-    detalhe: false                 # a rajada de requisições de detalhe fazia o
-                                   # servidor bloquear a paginação (405). O
-                                   # parser de área já ignora "m² de terreno"
-                                   # no texto do card.
-    # plataforma: Praedium CRM - mesmos seletores da Angelo Imoveis
-    seletores:
-      card: "div.thumbnail_one"
-      link: "a.property-card-link"
-      titulo: "h2.property_card_heading"
-      descricao: ""
-      preco: "div.property_pricing"
-      area: ""
-      quartos: ""
-      bairro: "span.property_card_address"
-
-  - nome: "7 Praias - Jd Acapulco (alto padrao)"
-    ativo: true
-    base_url: "https://www.setepraiasimobiliaria.com.br"
-    listagem_url: "https://www.setepraiasimobiliaria.com.br/imoveis/a-venda/guaruja/jardim-acapulco?pagina={page}"
-    cidade: "Guaruja"
-    tipo_padrao: ""
-    paginas: 3
-    detalhe: false                 # a pág. de detalhe do Kenlo tem "Valor do m²
-                                   # R$ X" que confunde o parser de área, e
-                                   # "partilha" no rodapé (falso positivo).
-                                   # O texto do card já traz área/preço/quartos.
-    # plataforma: Kenlo (ex-Ingaia). O card É um <a> (link no proprio card).
-    seletores:
-      card: "a.card-with-buttons"
-      link: "a"                      # ignorado: scraper usa o href do proprio card
-      titulo: ""
-      descricao: ""
-      preco: ""                      # tudo por fallback no texto do card
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  - nome: "Rocha Imoveis - Guaruja (alto padrao)"
-    ativo: true
-    base_url: "https://www.rochaimoveisguaruja.com.br"
-    listagem_url: "https://www.rochaimoveisguaruja.com.br/imoveis/a-venda/casa/guaruja/jardim-acapulco?pagina={page}"
-    cidade: "Guaruja"
-    tipo_padrao: "casa"
-    paginas: 3
-    detalhe: false                 # idem 7 Praias (Kenlo)
-    # plataforma: Kenlo - idem 7 Praias
-    seletores:
-      card: "a.card-with-buttons"
-      link: "a"
-      titulo: ""
-      descricao: ""
-      preco: ""
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  - nome: "M&M Riviera - Riviera de Sao Lourenco"
-    ativo: true
-    base_url: "https://mmrivieraimoveis.com.br"
-    listagem_url: "https://mmrivieraimoveis.com.br/buscar/comprar/todos/todas-cidades/todos-bairros?page={page}"
-    cidade: "Bertioga"
-    cidade_auto: true
-    pular_param_pagina_1: true
-    tipo_padrao: ""
-    paginas: 3
-    # plataforma: Microsistec v8 (imob.online) - mesmos seletores da Paulumar
-    seletores:
-      card: "div.property-item"
-      link: "a"
-      titulo: "h2"
-      descricao: ""
-      preco: ""
-      area: ""
-      quartos: ""
-      bairro: ""
-
-  - nome: "Anelio Imoveis - Guaruja (condominios)"
-    ativo: false                    # plataforma Union/Tokko: card sem <a href>
-    base_url: "https://anelioimoveis.com.br"        # (so id numerico). Mesmo caso
-    listagem_url: "https://anelioimoveis.com.br/comprar"   # da Mage Imoveis.
-    cidade: "Guaruja"
-    tipo_padrao: ""
-    paginas: 3
-    seletores:
-      card: "div.resultado"
-      link: "a"
-      titulo: "h3.tipo"
-      descricao: "div.descricao span"
-      preco: "div.valor h5"
-      area: "div.detalhe span"
-      quartos: ""
-      bairro: "h4.localizacao span"
+- nome: Angelo Imoveis - Peruibe
+  ativo: true
+  base_url: https://angeloimoveisperuibe.com.br
+  listagem_url: https://angeloimoveisperuibe.com.br/imoveis/a-venda/peruibe-sp?pagina={page}
+  cidade: Peruibe
+  tipo_padrao: ''
+  paginas: 20
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: div.property_pricing
+    area: .thum_data
+    quartos: ''
+    bairro: .property_card_address
+  cidade_auto: true
+  pular_param_pagina_1: true
+- nome: Paulumar Imoveis - Mongagua/Itanhaem
+  ativo: true
+  base_url: https://paulumar.com.br
+  listagem_url: https://paulumar.com.br/buscar/comprar/apartamento/todas-cidades/todos-bairros?negotiation=1&type=1&page={page}
+  cidade: Mongagua
+  cidade_auto: true
+  pular_param_pagina_1: true
+  tipo_padrao: apartamento
+  paginas: 3
+  detalhe: true
+  seletores:
+    card: div.property-item
+    link: a
+    titulo: h2.line-clamp-2
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+- nome: Imobiliaria do Julio - Mongagua/Itanhaem
+  ativo: false
+  base_url: https://www.imobiliariadojulio.com.br
+  listagem_url: https://www.imobiliariadojulio.com.br/buscar/mongagua-sao-paulo-brasil
+  cidade: Mongagua
+  tipo_padrao: ''
+  paginas: 1
+  seletores:
+    card: div.MuiCard-root
+    link: a
+    titulo: ''
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+- nome: Edson Imoveis - Itanhaem
+  ativo: true
+  base_url: https://www.edsonimoveis.com.br
+  listagem_url: https://www.edsonimoveis.com.br/
+  cidade: Itanhaem
+  tipo_padrao: ''
+  paginas: 1
+  seletores:
+    card: div.property
+    link: a
+    titulo: div.info h3
+    descricao: ''
+    preco: div.tag.price
+    area: ul.additional-info li:nth-of-type(1) figure
+    quartos: ul.additional-info li:nth-of-type(2) figure
+    bairro: div.info figure
+- nome: Imoveis Nobre - Itanhaem
+  ativo: false
+  base_url: https://www.imoveisnobre.com.br
+  listagem_url: https://www.imoveisnobre.com.br/venda/apartamento?pagina={page}
+  cidade: Itanhaem
+  tipo_padrao: apartamento
+  paginas: 3
+  seletores:
+    card: ''
+    link: a
+    titulo: ''
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+- nome: Mage Imoveis - Guaruja
+  ativo: false
+  base_url: https://www.mageimoveis.com.br
+  listagem_url: https://www.mageimoveis.com.br/comprar/pagina-{page}/
+  cidade: Guaruja
+  tipo_padrao: ''
+  paginas: 3
+  seletores:
+    card: div.resultado
+    link: a
+    titulo: h3.tipo
+    descricao: div.descricao span
+    preco: div.valor h5
+    area: div.detalhe span
+    quartos: ''
+    bairro: h4.localizacao span
+- nome: Imobiliaria Praias - Guaruja/Riviera
+  ativo: false
+  base_url: https://praias.com
+  listagem_url: https://praias.com/busca
+  cidade: Guaruja
+  tipo_padrao: ''
+  paginas: 1
+  seletores:
+    card: ''
+    link: a
+    titulo: ''
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+- nome: Susana Amorim - Guarujá
+  ativo: true
+  base_url: https://susanaamorimimoveis.com.br
+  listagem_url: https://susanaamorimimoveis.com.br/imoveis/a-venda/guaruja-sp?pagina={page}
+  cidade: Guaruja
+  tipo_padrao: ''
+  paginas: 20
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: div.property_pricing
+    area: .thum_data
+    quartos: ''
+    bairro: .property_card_address
+  cidade_auto: true
+  pular_param_pagina_1: true
+- nome: 7 Praias - Jd Acapulco (alto padrao)
+  ativo: false
+  base_url: https://www.setepraiasimobiliaria.com.br
+  listagem_url: https://www.setepraiasimobiliaria.com.br/imoveis/a-venda/guaruja/jardim-acapulco?pagina={page}
+  cidade: Guaruja
+  tipo_padrao: ''
+  paginas: 3
+  detalhe: false
+  seletores:
+    card: a.card-with-buttons
+    link: a
+    titulo: ''
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+  motivo_inativo: robots.txt bloqueia a listagem; não contornar
+- nome: Rocha Imoveis - Guaruja (alto padrao)
+  ativo: false
+  base_url: https://www.rochaimoveisguaruja.com.br
+  listagem_url: https://www.rochaimoveisguaruja.com.br/imoveis/a-venda/casa/guaruja/jardim-acapulco?pagina={page}
+  cidade: Guaruja
+  tipo_padrao: casa
+  paginas: 3
+  detalhe: false
+  seletores:
+    card: a.card-with-buttons
+    link: a
+    titulo: ''
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+  motivo_inativo: robots.txt bloqueia a listagem; não contornar
+- nome: M&M Riviera - Riviera de Sao Lourenco
+  ativo: true
+  base_url: https://mmrivieraimoveis.com.br
+  listagem_url: https://mmrivieraimoveis.com.br/buscar/comprar/todos/todas-cidades/todos-bairros?page={page}
+  cidade: Bertioga
+  cidade_auto: true
+  pular_param_pagina_1: true
+  tipo_padrao: ''
+  paginas: 3
+  seletores:
+    card: div.property-item
+    link: a
+    titulo: h2
+    descricao: ''
+    preco: ''
+    area: ''
+    quartos: ''
+    bairro: ''
+- nome: Anelio Imoveis - Guaruja (condominios)
+  ativo: false
+  base_url: https://anelioimoveis.com.br
+  listagem_url: https://anelioimoveis.com.br/comprar
+  cidade: Guaruja
+  tipo_padrao: ''
+  paginas: 3
+  seletores:
+    card: div.resultado
+    link: a
+    titulo: h3.tipo
+    descricao: div.descricao span
+    preco: div.valor h5
+    area: div.detalhe span
+    quartos: ''
+    bairro: h4.localizacao span
+- nome: DJB Consultoria - São Paulo
+  ativo: true
+  base_url: https://www.djbconsultoriaimobiliaria.com.br
+  listagem_url: https://www.djbconsultoriaimobiliaria.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
+  cidade: São Paulo
+  cidade_auto: true
+  cidades_permitidas:
+  - São Paulo
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: JR Imóveis - São Paulo
+  ativo: true
+  base_url: https://www.imobjr.com.br
+  listagem_url: https://www.imobjr.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
+  cidade: São Paulo
+  cidade_auto: true
+  cidades_permitidas:
+  - São Paulo
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Sanchez Imobiliária - São Paulo
+  ativo: true
+  base_url: https://sanchezimobiliaria.com.br
+  listagem_url: https://sanchezimobiliaria.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
+  cidade: São Paulo
+  cidade_auto: true
+  cidades_permitidas:
+  - São Paulo
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Homespot - São Paulo
+  ativo: true
+  base_url: https://www.homespotimoveis.com.br
+  listagem_url: https://www.homespotimoveis.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
+  cidade: São Paulo
+  cidade_auto: true
+  cidades_permitidas:
+  - São Paulo
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: SKL Imóveis - Itanhaém
+  ativo: true
+  base_url: https://skl.imb.br
+  listagem_url: https://skl.imb.br/imoveis/a-venda/itanhaem-sp?pagina={page}
+  cidade: Itanhaém
+  cidade_auto: true
+  cidades_permitidas:
+  - Itanhaém
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: William Buongiovanni - Mongaguá
+  ativo: true
+  base_url: https://williambuongiovanni.com.br
+  listagem_url: https://williambuongiovanni.com.br/imoveis/a-venda/mongagua-sp?pagina={page}
+  cidade: Mongaguá
+  cidade_auto: true
+  cidades_permitidas:
+  - Mongaguá
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imigrantes Imóveis - Praia Grande
+  ativo: true
+  base_url: https://imigrantesimoveis.com.br
+  listagem_url: https://imigrantesimoveis.com.br/imoveis/a-venda/praia-grande-sp?pagina={page}
+  cidade: Praia Grande
+  cidade_auto: true
+  cidades_permitidas:
+  - Praia Grande
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imobi Santista - Santos
+  ativo: true
+  base_url: https://www.imobisantista.com.br
+  listagem_url: https://www.imobisantista.com.br/imoveis/a-venda/santos-sp?pagina={page}
+  cidade: Santos
+  cidade_auto: true
+  cidades_permitidas:
+  - Santos
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imobi Santista - São Vicente
+  ativo: true
+  base_url: https://www.imobisantista.com.br
+  listagem_url: https://www.imobisantista.com.br/imoveis/a-venda/sao-vicente-sp?pagina={page}
+  cidade: São Vicente
+  cidade_auto: true
+  cidades_permitidas:
+  - São Vicente
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Beatriz Corretora - Peruíbe
+  ativo: true
+  base_url: https://beatrizcorretora.com.br
+  listagem_url: https://beatrizcorretora.com.br/imoveis/a-venda/peruibe-sp?pagina={page}
+  cidade: Peruíbe
+  cidade_auto: true
+  cidades_permitidas:
+  - Peruíbe
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: D&F Riviera - Bertioga
+  ativo: true
+  base_url: https://www.defriviera.com.br
+  listagem_url: https://www.defriviera.com.br/imoveis/a-venda/bertioga-sp?pagina={page}
+  cidade: Bertioga
+  cidade_auto: true
+  cidades_permitidas:
+  - Bertioga
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imperial Imóveis - Caraguatatuba
+  ativo: true
+  base_url: https://imperialimoveiscaragua.com.br
+  listagem_url: https://imperialimoveiscaragua.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
+  cidade: Caraguatatuba
+  cidade_auto: true
+  cidades_permitidas:
+  - Caraguatatuba
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imperial Imóveis - Ubatuba
+  ativo: true
+  base_url: https://imperialimoveiscaragua.com.br
+  listagem_url: https://imperialimoveiscaragua.com.br/imoveis/a-venda/ubatuba-sp?pagina={page}
+  cidade: Ubatuba
+  cidade_auto: true
+  cidades_permitidas:
+  - Ubatuba
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: David Imóveis - Caraguatatuba
+  ativo: true
+  base_url: https://www.davidimoveis.com.br
+  listagem_url: https://www.davidimoveis.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
+  cidade: Caraguatatuba
+  cidade_auto: true
+  cidades_permitidas:
+  - Caraguatatuba
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Janaína Soares - Caraguatatuba
+  ativo: true
+  base_url: https://www.corretorajanainafsoares.com.br
+  listagem_url: https://www.corretorajanainafsoares.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
+  cidade: Caraguatatuba
+  cidade_auto: true
+  cidades_permitidas:
+  - Caraguatatuba
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Borges Boiçucanga - São Sebastião
+  ativo: true
+  base_url: https://borgesimoveisboissucanga.com.br
+  listagem_url: https://borgesimoveisboissucanga.com.br/imoveis/a-venda/sao-sebastiao-sp?pagina={page}
+  cidade: São Sebastião
+  cidade_auto: true
+  cidades_permitidas:
+  - São Sebastião
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Imobiliária Ilhabela - Ilhabela
+  ativo: true
+  base_url: https://imobiliariailhabela.com.br
+  listagem_url: https://imobiliariailhabela.com.br/imoveis/a-venda/ilhabela-sp?pagina={page}
+  cidade: Ilhabela
+  cidade_auto: true
+  cidades_permitidas:
+  - Ilhabela
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: div.thumbnail_one
+    link: a.property-card-link
+    titulo: .property_card_heading > .color-primary
+    descricao: .card_property_description
+    preco: .property_pricing
+    area: .thum_data
+    bairro: .property_card_address
+- nome: Ubatuba.com - Ubatuba
+  ativo: true
+  base_url: https://imobiliariaubatuba.com
+  listagem_url: https://imobiliariaubatuba.com/imoveis/categoria/venda
+  cidade: Ubatuba
+  cidade_auto: true
+  paginas: 1
+  detalhe: false
+  seletores:
+    card: div.property
+    link: a[href*="/imoveis/"]
+    titulo: h1
+    bairro: .property-address
+- nome: Roberto Santos - Baixada Santista
+  ativo: true
+  base_url: https://www.imoveisrobertosantos.com.br
+  listagem_url: https://www.imoveisrobertosantos.com.br/imoveis/venda/
+  cidade: ''
+  cidade_auto: true
+  paginas: 1
+  detalhe: false
+  seletores:
+    card: div.imoveis
+    link: a[href*="/imoveis/venda/"]
+    titulo: .tipo-imovel
+    tipo: .tipo-imovel
+    preco: .preco
+    bairro: .bairro
+    cidade: .cidade
+    area: .icones
+- nome: Zullo - São Sebastião
+  ativo: true
+  base_url: https://www.zullo.com.br
+  listagem_url: https://www.zullo.com.br/venda/?pagina={page}
+  cidade: São Sebastião
+  paginas: 20
+  detalhe: false
+  seletores:
+    card: div.group:has(a[href^="/imovel/"])
+    link: a[href^="/imovel/"]
+    titulo: h3
+    bairro: h3
+- nome: Chavee - São Paulo
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/sao-paulo-sp?pagina={page}
+  cidade: São Paulo
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - São Paulo
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+- nome: Chavee - Itanhaém
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/itanhaem-sp?pagina={page}
+  cidade: Itanhaém
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - Itanhaém
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+- nome: Chavee - Praia Grande
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/praia-grande-sp?pagina={page}
+  cidade: Praia Grande
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - Praia Grande
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+- nome: Chavee - Santos
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/santos-sp?pagina={page}
+  cidade: Santos
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - Santos
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+- nome: Chavee - São Vicente
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/sao-vicente-sp?pagina={page}
+  cidade: São Vicente
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - São Vicente
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+- nome: Chavee - Mongaguá
+  ativo: true
+  base_url: https://chavee.com.br
+  listagem_url: https://chavee.com.br/venda/mongagua-sp?pagina={page}
+  cidade: Mongaguá
+  bairro_inclui_cidade: true
+  cidades_permitidas:
+  - Mongaguá
+  paginas: 20
+  pular_param_pagina_1: true
+  detalhe: false
+  seletores:
+    card: a.property-card__body
+    link: a
+    titulo: .property-card__title
+    bairro: .property-card__location
+    preco: .property-card__price
+    area: .property-card__attr[title*="m²"]
+    quartos:
+      css: .property-card__attr[title*="quarto"]
+      atributo: title
+    vagas:
+      css: .property-card__attr[title*="vaga"]
+      atributo: title
+cidades_monitoradas:
+- São Paulo
+- Itanhaém
+- Mongaguá
+- Praia Grande
+- Santos
+- Peruíbe
+- São Vicente
+- Guarujá
+- Bertioga
+- Caraguatatuba
+- Ubatuba
+- São Sebastião
+- Ilhabela

@@ -15,6 +15,10 @@ import sys
 import time
 import argparse
 import yaml
+import json
+from pathlib import Path
+from collections import Counter
+from datetime import datetime, timezone
 
 import log
 from scraper import raspar_todos
@@ -27,7 +31,64 @@ _log = log.get(__name__)
 
 def carregar_config(caminho):
     with open(caminho, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+    validar_config(config)
+    return config
+
+
+def validar_config(config):
+    """Rejeita configurações inválidas antes de acessar sites ou criar o banco."""
+    import math
+    if not isinstance(config, dict):
+        raise ValueError("A configuração deve ser um mapa YAML.")
+    for key in ("telegram", "scraper", "analise", "agendamento"):
+        if key in config and not isinstance(config[key], dict):
+            raise ValueError(f"{key} deve ser um mapa YAML.")
+    cidades = config.get("cidades_monitoradas", [])
+    if not isinstance(cidades, list) or any(not isinstance(c, str) or not c.strip() for c in cidades):
+        raise ValueError("cidades_monitoradas deve ser uma lista de nomes de cidades.")
+    sites = config.get("sites")
+    if not isinstance(sites, list) or not sites:
+        raise ValueError("Configure pelo menos um site em sites.")
+    for site in sites:
+        if not isinstance(site, dict):
+            raise ValueError("Cada site deve ser um mapa YAML.")
+        if not site.get("ativo", True):
+            continue
+        for key in ("nome", "base_url", "listagem_url"):
+            if not isinstance(site.get(key), str) or not site[key].strip():
+                raise ValueError(f"Site sem {key} válido.")
+        from urllib.parse import urlsplit
+        for key in ("base_url", "listagem_url"):
+            url = urlsplit(site[key])
+            if url.scheme not in ("http", "https") or not url.netloc:
+                raise ValueError(f"{key} deve ser uma URL HTTP(S).")
+        if not isinstance(site.get("seletores"), dict) or not site["seletores"].get("card"):
+            raise ValueError(f"{site['nome']}: configure seletores.card.")
+        cidades = site.get("cidades_permitidas", [])
+        if not isinstance(cidades, list) or any(not isinstance(c, str) or not c.strip() for c in cidades):
+            raise ValueError("cidades_permitidas deve ser uma lista de cidades.")
+        n = site.get("paginas", 1)
+        if type(n) is not int or n < 1:
+            raise ValueError("paginas deve ser um inteiro positivo.")
+    ranges = {
+        "analise": {"min_amostra": (2, None), "limiar_desconto": (0, 1),
+                    "realerta_queda": (0, 1), "historico_dias": (0, None),
+                    "preco_min": (0, None), "preco_m2_min": (0, None), "preco_m2_max": (0, None)},
+        "scraper": {"delay_segundos": (0, None), "delay_detalhe_segundos": (0, None)},
+        "agendamento": {"intervalo_minutos": (0.01, None)},
+    }
+    for section, fields in ranges.items():
+        for key, (low, high) in fields.items():
+            if key not in config.get(section, {}):
+                continue
+            value = config[section][key]
+            if (type(value) not in (int, float) or not math.isfinite(value)
+                    or value < low or (high is not None and value >= high)):
+                raise ValueError(f"Valor inválido: {section}.{key}")
+    a = config.get("analise", {})
+    if a.get("preco_m2_min", 300) >= a.get("preco_m2_max", 60000):
+        raise ValueError("preco_m2_min deve ser menor que preco_m2_max.")
 
 
 def _deve_realertar(im, preco_anterior, queda_min):
@@ -40,10 +101,14 @@ def _deve_realertar(im, preco_anterior, queda_min):
     return im.preco <= preco_anterior * (1 - queda_min)
 
 
-def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None):
+def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=None):
     _log.info("==== Novo ciclo: %s ====", time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    imoveis = raspar_todos(config, max_paginas=max_paginas)
+    relatorio = relatorio if relatorio is not None else {}
+    relatorio.update(inicio=datetime.now(timezone.utc).isoformat(), dry_run=dry_run)
+    imoveis = raspar_todos(config, max_paginas=max_paginas, relatorio=relatorio)
+    relatorio["anuncios"] = len(imoveis)
+    relatorio["por_cidade"] = dict(Counter(im.cidade for im in imoveis))
     _log.info("Total raspado: %s anúncios", len(imoveis))
 
     a = config.get("analise", {})
@@ -62,6 +127,7 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None):
         historico=historico,
     )
     _log.info("Oportunidades detectadas: %s", len(ops))
+    relatorio["oportunidades"] = len(ops)
 
     # persiste tudo que viu (histórico ajuda a calibrar a mediana nos próximos ciclos)
     for im in imoveis:
@@ -95,7 +161,25 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None):
     else:
         _log.info("Alertas novos: %s  |  enviados: %s  |  falharam: %s",
                   novos, enviados, falhas)
+    relatorio.update(novos=novos, enviados=enviados, falhas_envio=falhas, fim=datetime.now(timezone.utc).isoformat())
+    if falhas:
+        raise RuntimeError(f"Falha no envio de {falhas} alerta(s); serão tentados no próximo ciclo.")
     return novos
+
+
+def executar_ciclo(config, storage, tg, args):
+    relatorio = {}
+    try:
+        return rodar_ciclo(config, storage, tg, args.dry_run, args.max_paginas, relatorio)
+    except Exception as exc:
+        relatorio["erro"] = str(exc)
+        raise
+    finally:
+        if args.relatorio:
+            destino = Path(args.relatorio)
+            temporario = destino.with_suffix(destino.suffix + ".tmp")
+            temporario.write_text(json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8")
+            temporario.replace(destino)
 
 
 def montar_telegram(config, dry_run):
@@ -112,11 +196,13 @@ def montar_telegram(config, dry_run):
 def main():
     ap = argparse.ArgumentParser(description="Bot garimpeiro de imóveis")
     ap.add_argument("--config", default="config.yaml")
-    ap.add_argument("--once", action="store_true", help="roda um ciclo e sai")
-    ap.add_argument("--loop", action="store_true", help="roda em loop contínuo")
+    modo = ap.add_mutually_exclusive_group()
+    modo.add_argument("--once", action="store_true", help="roda um ciclo e sai")
+    modo.add_argument("--loop", action="store_true", help="roda em loop contínuo")
     ap.add_argument("--dry-run", action="store_true", help="não envia Telegram, só imprime")
     ap.add_argument("--max-paginas", type=int, default=None, help="limita páginas por site")
     ap.add_argument("--log-file", default="bot.log", help="arquivo de log (vazio p/ só console)")
+    ap.add_argument("--relatorio", default="relatorio.json", help="relatório JSON do ciclo")
     args = ap.parse_args()
 
     log.configurar(arquivo=args.log_file or None)
@@ -124,20 +210,31 @@ def main():
     if not (args.once or args.loop):
         args.once = True
 
-    config = carregar_config(args.config)
-    storage = Storage(config.get("db", "imoveis.db"))
+    if args.max_paginas is not None and args.max_paginas < 1:
+        ap.error("--max-paginas deve ser positivo")
+    try:
+        config = carregar_config(args.config)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        ap.error(str(exc))
     tg = montar_telegram(config, args.dry_run)
+    storage = Storage(config.get("db", "imoveis.db"))
 
     try:
         if args.once:
-            rodar_ciclo(config, storage, tg, args.dry_run, args.max_paginas)
+            executar_ciclo(config, storage, tg, args)
         else:
             intervalo = config.get("agendamento", {}).get("intervalo_minutos", 180)
             _log.info("Modo loop: a cada %s min. Ctrl+C para parar.", intervalo)
             while True:
-                rodar_ciclo(config, storage, tg, args.dry_run, args.max_paginas)
+                try:
+                    executar_ciclo(config, storage, tg, args)
+                except RuntimeError as exc:
+                    _log.error("Ciclo falhou: %s", exc)
                 _log.info("Dormindo %s min...", intervalo)
                 time.sleep(intervalo * 60)
+    except RuntimeError as exc:
+        _log.error("Ciclo falhou: %s", exc)
+        return 1
     except KeyboardInterrupt:
         _log.info("Encerrado pelo usuário.")
     finally:
@@ -145,4 +242,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

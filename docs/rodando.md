@@ -55,8 +55,8 @@ Roda `run.bat` (= `main.py --once`) de tempos em tempos. Sobrevive a reboot.
 3. **Disparadores → Novo:** "Diariamente", repetir a cada **3 horas**,
    por "1 dia" (indefinidamente).
 4. **Ações → Nova:**
-   - Programa: `C:\Users\vfcarvalho\bot-garimpeiro-imoveis\run.bat`
-   - Iniciar em: `C:\Users\vfcarvalho\bot-garimpeiro-imoveis`
+   - Programa: `C:\caminho\para\imoveis\run.bat`
+   - Iniciar em: `C:\caminho\para\imoveis`
 5. **Condições:** desmarque "Iniciar a tarefa apenas se o computador
    estiver ligado na tomada" se for notebook.
 6. OK (pede a senha do Windows).
@@ -82,3 +82,22 @@ ou `cron` chamando `python main.py --once`.
 - Ajuste no `config.yaml`: `limiar_desconto`, `min_amostra`, `exigir_keyword`.
 - Olhe o `bot.log` de vez em quando: linha `[!]` = site que quebrou
   (seletor desatualizado), `[robots]` = bloqueado por robots.txt.
+
+Falhas na recuperação do banco interrompem a automação sem substituir o estado.
+A branch `data` preserva versões anteriores; o envio rejeita alterações concorrentes.
+
+## Diagnóstico do agendamento
+
+- O workflow precisa estar ativo e existir na branch padrão `main`.
+- Horário configurado: minuto 17 a cada três horas (UTC). No horário de Brasília,
+  também são 00:17, 03:17, 06:17, 09:17, 12:17, 15:17, 18:17 e 21:17.
+- O GitHub pode atrasar ou omitir execuções sob carga, especialmente no início da
+  hora; por isso o minuto foi deslocado de 00 para 17.
+- O resumo da execução diferencia coleta vazia, bloqueios, falhas de envio e
+  ausência de novas oportunidades. Consulte `relatorio.json` nos artefatos.
+- O teste automático após atualização da main lê até duas páginas por fonte;
+  os ciclos agendados usam o limite completo de cada fonte (até 20 no exemplo).
+- A execução tem até 60 minutos. O banco só é restaurado após validação e os
+  alertas confirmados são preservados mesmo se outro envio falhar.
+
+Referência: [eventos de agendamento do GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).

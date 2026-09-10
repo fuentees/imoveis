@@ -2,8 +2,20 @@ name: bot-imoveis
 
 on:
   schedule:
-    - cron: "0 */3 * * *"      # a cada 3h (UTC); o GitHub pode atrasar alguns minutos
-  workflow_dispatch: {}         # botão "Run workflow" pra rodar na hora
+    - cron: "17 */3 * * *"      # a cada 3h (UTC); o GitHub pode atrasar alguns minutos
+  push:
+    branches: [main]
+    paths: ["*.py", "tools/**", "config.example.yaml", "requirements*.txt", ".github/workflows/bot.yml"]
+  workflow_dispatch:
+    inputs:
+      max_paginas:
+        description: "Máximo de páginas por fonte (0 usa a configuração completa)"
+        default: "0"
+        type: string
+
+env:
+  TZ: America/Sao_Paulo
+  PYTHONUTF8: "1"
 
 concurrency:
   group: bot-imoveis
@@ -15,7 +27,7 @@ permissions:
 jobs:
   ciclo:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -33,36 +45,73 @@ jobs:
         run: cp config.example.yaml config.yaml
 
       - name: Restaura o imoveis.db da branch "data"
+        id: estado
+        shell: bash
         run: |
-          if git fetch --depth=1 origin data 2>/dev/null; then
-            git cat-file -p FETCH_HEAD:imoveis.db > imoveis.db && echo "db restaurado"
+          set -euo pipefail
+          refs=$(git ls-remote --heads origin refs/heads/data)
+          if [ -n "$refs" ]; then
+            git fetch origin refs/heads/data:refs/remotes/origin/data
+            git show refs/remotes/origin/data:imoveis.db > imoveis.db.tmp
+            python tools/validar_db.py imoveis.db.tmp
+            mv imoveis.db.tmp imoveis.db
           else
-            echo "sem db anterior — começando do zero"
+            echo "Branch data ainda não existe; primeiro ciclo."
           fi
+          echo "pronto=true" >> "$GITHUB_OUTPUT"
 
       - name: Roda um ciclo
+        id: ciclo
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python main.py --once
+          MAX_PAGINAS: ${{ github.event_name == 'push' && '2' || inputs.max_paginas || '0' }}
+        run: |
+          if [[ ! "$MAX_PAGINAS" =~ ^[0-9]+$ ]]; then
+            echo "max_paginas deve ser um inteiro não negativo" >&2
+            exit 1
+          fi
+          args=(--once)
+          if [ "$MAX_PAGINAS" != "0" ]; then
+            args+=(--max-paginas "$MAX_PAGINAS")
+          fi
+          python main.py "${args[@]}"
 
       - name: Salva o imoveis.db na branch "data"
-        if: always()
+        if: ${{ always() && steps.estado.outputs.pronto == 'true' && steps.ciclo.outcome != 'skipped' }}
+        shell: bash
         run: |
+          set -euo pipefail
           test -f imoveis.db || exit 0
-          tmp="$(mktemp -d)"; cp imoveis.db "$tmp/"; cd "$tmp"
-          git init -q && git checkout -q -b data
-          git add imoveis.db
-          git -c user.name="bot-imoveis" -c user.email="actions@github.com" \
+          python tools/validar_db.py imoveis.db
+          tmp=$(mktemp -d)
+          if git show-ref --verify --quiet refs/remotes/origin/data; then
+            git worktree add --detach "$tmp" refs/remotes/origin/data
+          else
+            git worktree add --detach "$tmp" HEAD
+            git -C "$tmp" checkout --orphan data
+            git -C "$tmp" rm -rf .
+          fi
+          cp imoveis.db "$tmp/imoveis.db"
+          git -C "$tmp" add -f imoveis.db
+          if git -C "$tmp" diff --cached --quiet; then
+            exit 0
+          fi
+          git -C "$tmp" -c user.name="bot-imoveis" -c user.email="actions@github.com" \
             commit -qm "estado $(date -u +%FT%TZ) [skip ci]"
-          git push -qf \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data
+          git -C "$tmp" push origin HEAD:refs/heads/data
+
+      - name: Resumo da coleta
+        if: always()
+        run: python tools/resumo_ciclo.py >> "$GITHUB_STEP_SUMMARY"
 
       - name: Guarda o log do ciclo
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bot-log-${{ github.run_id }}
-          path: bot.log
+          path: |
+            bot.log
+            relatorio.json
           retention-days: 7
           if-no-files-found: ignore

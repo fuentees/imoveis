@@ -141,8 +141,8 @@ def _chaves_dedupe(im: Imovel):
     chaves = ["u:" + im.url.rstrip("/")]
     if im.preco and im.area:
         titulo_norm = normalizar_texto(im.titulo or "")[:40]
-        chaves.append("f:%s|%s|%s|%d|%d|%d" % (
-            canon_bairro(im.bairro), normalizar_texto(im.tipo), titulo_norm,
+        chaves.append("f:%s|%s|%s|%s|%d|%d|%d" % (
+            normalizar_texto(im.cidade), canon_bairro(im.bairro), normalizar_texto(im.tipo), titulo_norm,
             round(im.preco / 1000), round(im.area), im.quartos or 0,
         ))
     return chaves

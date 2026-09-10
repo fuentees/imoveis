@@ -22,8 +22,11 @@ palavras-chave de espólio / venda urgente**. Manda os achados pelo **Telegram**
 ## Instalação
 
 ```bash
-pip install -r requirements.txt
-cp config.example.yaml config.yaml   # e edite
+python -m venv .venv
+# Windows:
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+# Linux/macOS: .venv/bin/python -m pip install -r requirements-dev.txt
+# Copie config.example.yaml para config.yaml e edite
 ```
 
 No Windows use `python` (não `python3`). Para rodar os testes:
@@ -110,3 +113,43 @@ main.py       orquestrador (--once / --loop / --dry-run)
 config.yaml   sua configuração (sites, limiares, credenciais)
 tests/        pytest (parser, analyzer, scraper, storage)
 ```
+
+## Verificação e operação
+
+Use Python 3.10 ou superior. Ative o ambiente virtual antes dos comandos
+`python` e `pytest`: no PowerShell, `.venv\Scripts\Activate.ps1`; no Linux/macOS,
+`source .venv/bin/activate`. O `run.bat` usa diretamente o ambiente `.venv`.
+
+O modo `--once` termina com erro quando nenhum anúncio é coletado dos sites
+ativos ou quando algum alerta falha. No modo `--loop`, essas falhas são
+registradas e o bot tenta novamente no próximo intervalo. Alertas já enviados
+com sucesso continuam registrados, mesmo que outro envio falhe.
+
+`--dry-run` atualiza o histórico local para calibração, mas não envia nem marca
+alertas. `_full_test.py` é um diagnóstico de coleta: não altera banco ou alertas.
+
+O workflow valida o banco antes da restauração e da gravação. Erros de rede
+na recuperação interrompem a execução; apenas uma branch `data` comprovadamente
+inexistente permite começar do zero. As atualizações preservam os commits
+anteriores e não usam envio forçado. Os testes também rodam em pushes e PRs.
+
+## Cobertura e acompanhamento
+
+O exemplo agora cobre São Paulo, Itanhaém, Mongaguá, Praia Grande, Santos,
+Peruíbe, São Vicente, Guarujá, Bertioga, Caraguatatuba, Ubatuba, São Sebastião
+ e Ilhabela. Consulte [fontes e limites](docs/fontes.md).
+
+No GitHub Actions, o bot agenda oito ciclos diários, a cada três horas, no minuto
+17 (horário de Brasília: 00:17, 03:17, 06:17, 09:17, 12:17, 15:17, 18:17, 21:17).
+O GitHub pode atrasar ou omitir execuções sob carga. O computador local não precisa
+ficar ligado. Atualizações relevantes na main disparam uma verificação automática
+com até duas páginas por fonte; execuções agendadas usam o limite completo do YAML.
+
+Em Actions → bot-imoveis → execução, o resumo mostra contagem por cidade, fontes
+com falhas, páginas lidas e alertas enviados. Os artefatos incluem `bot.log` e
+`relatorio.json`. Sem alertas novos pode significar que a coleta funcionou, mas
+nenhuma oportunidade nova passou nos filtros ou todas já foram avisadas.
+
+Para executar manualmente, use Run workflow; `max_paginas=0` usa os limites do
+arquivo de configuração. Para testar localmente sem enviar mensagens:
+`python main.py --config config.example.yaml --once --dry-run --max-paginas 1`.

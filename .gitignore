@@ -18,3 +18,9 @@ env/
 .DS_Store
 .idea/
 .vscode/
+
+# diagnósticos locais
+.local-probes/
+
+relatorio*.json
+relatorio*.json.tmp
