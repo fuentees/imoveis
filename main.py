@@ -74,6 +74,7 @@ def validar_config(config):
     ranges = {
         "analise": {"min_amostra": (2, None), "limiar_desconto": (0, 1),
                     "realerta_queda": (0, 1), "historico_dias": (0, None),
+                    "max_alertas_por_ciclo": (1, None),
                     "preco_min": (0, None), "preco_m2_min": (0, None), "preco_m2_max": (0, None)},
         "scraper": {"delay_segundos": (0, None), "delay_detalhe_segundos": (0, None)},
         "agendamento": {"intervalo_minutos": (0.01, None)},
@@ -130,12 +131,11 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
     relatorio["oportunidades"] = len(ops)
 
     # persiste tudo que viu (histórico ajuda a calibrar a mediana nos próximos ciclos)
-    for im in imoveis:
-        if im.preco_m2:
-            storage.upsert_imovel(im)
+    storage.upsert_imoveis(im for im in imoveis if im.preco_m2)
 
     queda_min = a.get("realerta_queda", 0.10)
-    novos = enviados = falhas = 0
+    limite_alertas = a.get("max_alertas_por_ciclo", 10)
+    pendentes = []
     for im in ops:
         info = storage.info_alerta(im.url)
         if info is not None:
@@ -144,7 +144,13 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
                 continue
             _log.info("re-alerta (preço caiu): %s  %s -> %s",
                       im.url[-50:], preco_ant, im.preco)
-        novos += 1
+        pendentes.append(im)
+
+    novos = len(pendentes)
+    fila = pendentes if dry_run else pendentes[:limite_alertas]
+    adiados = 0 if dry_run else max(0, novos - len(fila))
+    enviados = falhas = 0
+    for im in fila:
         msg = formatar_alerta(im)
         if dry_run:
             _log.info("--- (dry-run, não enviado) ---\n%s", msg)
@@ -159,9 +165,10 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
     if dry_run:
         _log.info("Alertas novos (dry-run): %s", novos)
     else:
-        _log.info("Alertas novos: %s  |  enviados: %s  |  falharam: %s",
-                  novos, enviados, falhas)
-    relatorio.update(novos=novos, enviados=enviados, falhas_envio=falhas, fim=datetime.now(timezone.utc).isoformat())
+        _log.info("Alertas novos: %s  |  enviados: %s  |  adiados: %s  |  falharam: %s",
+                  novos, enviados, adiados, falhas)
+    relatorio.update(novos=novos, enviados=enviados, adiados=adiados,
+                     falhas_envio=falhas, fim=datetime.now(timezone.utc).isoformat())
     if falhas:
         raise RuntimeError(f"Falha no envio de {falhas} alerta(s); serão tentados no próximo ciclo.")
     return novos

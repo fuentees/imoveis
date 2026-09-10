@@ -92,6 +92,37 @@ def test_dry_run_nao_envia_nem_marca(monkeypatch):
         st.fechar()
 
 
+def test_limita_alertas_e_deixa_restante_para_proximo_ciclo(monkeypatch):
+    ims = [Imovel(url=f"https://x/{i}", titulo=f"Casa {i}", descricao="espolio",
+                 preco=500000, area=100)
+           for i in range(3)]
+    monkeypatch.setattr("main.raspar_todos", lambda *a, **k: ims)
+    monkeypatch.setattr("main.time.sleep", lambda _: None)
+    tg = Mock(); tg.enviar.return_value = True
+    st = Storage(":memory:")
+    cfg = {"analise": {"max_alertas_por_ciclo": 2}}
+    try:
+        assert rodar_ciclo(cfg, st, tg) == 3
+        assert tg.enviar.call_count == 2
+        assert sum(st.ja_alertado(im.url) for im in ims) == 2
+        assert rodar_ciclo(cfg, st, tg) == 1
+        assert tg.enviar.call_count == 3
+        assert all(st.ja_alertado(im.url) for im in ims)
+    finally:
+        st.fechar()
+
+
+def test_persistencia_em_lote(monkeypatch):
+    st = Storage(":memory:")
+    ims = [Imovel(url=f"https://x/{i}", preco=500000, area=100, preco_m2=5000)
+           for i in range(3)]
+    try:
+        st.upsert_imoveis(ims)
+        assert len(st.carregar_comparaveis()) == 3
+    finally:
+        st.fechar()
+
+
 @pytest.mark.parametrize("status,body,esperado", [(200,{"ok":True},True),(200,{"ok":False},False),(429,{},False),(500,{},False)])
 def test_telegram_verifica_resposta(monkeypatch, status, body, esperado):
     monkeypatch.setattr("notifier.requests.post", lambda *a, **k: SimpleNamespace(status_code=status, text="erro", json=lambda: body))

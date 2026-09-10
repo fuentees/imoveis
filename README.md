@@ -17,7 +17,8 @@ palavras-chave de espólio / venda urgente**. Manda os achados pelo **Telegram**
 5. **Cruza com palavras-chave** (`espólio`, `inventário`, `urgente`, `aceito
    proposta`...). Esse é o sinal que separa oportunidade real de imóvel-problema.
 6. **Pontua e alerta** no Telegram (sem repetir imóvel já enviado; só re-alerta
-   se o preço cair mais depois).
+   se o preço cair mais depois). Envia no máximo 10 por ciclo, do maior score
+   para o menor; o restante fica automaticamente para o ciclo seguinte.
 
 ## Instalação
 
@@ -71,6 +72,8 @@ Já calibrado para o litoral sul de SP a partir de dry-runs reais:
 
 - `min_amostra: 6` — abaixo disso a mediana ficava instável em bairro de nicho
   (casas de 670 m², coberturas). Grupos menores não geram alerta de preço.
+- `max_alertas_por_ciclo: 10` — evita uma enxurrada de mensagens; os candidatos
+  adiados continuam na fila e são enviados nos ciclos seguintes.
 - **Palavra-chave só dispara sozinha se for "forte"** (espólio, inventário,
   herança…). `partilha`, `desocupado` e afins entram em `KEYWORDS_FRACAS`
   (`analyzer.py`) — aparecem em rodapé jurídico de site, então só contam quando
@@ -127,6 +130,8 @@ com sucesso continuam registrados, mesmo que outro envio falhe.
 
 `--dry-run` atualiza o histórico local para calibração, mas não envia nem marca
 alertas. `_full_test.py` é um diagnóstico de coleta: não altera banco ou alertas.
+O histórico de cada varredura é gravado em uma única transação, reduzindo o
+tempo de disco e garantindo que o lote fique consistente.
 
 O workflow valida o banco antes da restauração e da gravação. Erros de rede
 na recuperação interrompem a execução; apenas uma branch `data` comprovadamente

@@ -39,6 +39,10 @@ class Storage:
             self.con.execute("ALTER TABLE alertas ADD COLUMN preco REAL")
 
     def upsert_imovel(self, im):
+        self._upsert_imovel(im)
+        self.con.commit()
+
+    def _upsert_imovel(self, im):
         agora = time.time()
         cur = self.con.execute("SELECT url FROM imoveis WHERE url=?", (im.url,))
         existe = cur.fetchone() is not None
@@ -56,7 +60,12 @@ class Storage:
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (im.url, im.titulo, im.bairro, im.cidade, im.tipo, im.preco, im.area,
                  im.quartos, im.vagas, im.fonte, im.preco_m2, agora, agora))
-        self.con.commit()
+
+    def upsert_imoveis(self, imoveis):
+        """Persiste um ciclo inteiro em uma única transação."""
+        with self.con:
+            for im in imoveis:
+                self._upsert_imovel(im)
 
     def carregar_comparaveis(self, dias=180):
         """

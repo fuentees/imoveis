@@ -18,6 +18,7 @@ analise:
   preco_m2_max: 60000
   historico_dias: 180
   realerta_queda: 0.1
+  max_alertas_por_ciclo: 10
 agendamento:
   intervalo_minutos: 180
 sites:

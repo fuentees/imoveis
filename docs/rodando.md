@@ -99,5 +99,7 @@ A branch `data` preserva versões anteriores; o envio rejeita alterações conco
   os ciclos agendados usam o limite completo de cada fonte (até 20 no exemplo).
 - A execução tem até 60 minutos. O banco só é restaurado após validação e os
   alertas confirmados são preservados mesmo se outro envio falhar.
+- Por padrão, chegam no máximo 10 alertas por ciclo. Os demais ficam pendentes
+  e entram nos ciclos seguintes, sempre na ordem de relevância.
 
 Referência: [eventos de agendamento do GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
