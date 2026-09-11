@@ -85,6 +85,11 @@ Já calibrado para o litoral sul de SP a partir de dry-runs reais:
 O exemplo exige deságio de pelo menos 40%. Para receber exclusivamente imóveis
 baratos que também mencionem uma motivação forte, ligue `exigir_keyword: true`.
 
+Valores anunciados como entrada, sinal, ato, parcela, prestação ou mensalidade
+não são tratados como preço do imóvel. Se o texto trouxer preço total e entrada,
+somente o total entra na comparação; se trouxer apenas a entrada, o anúncio fica
+fora da análise e aparece como preço parcial rejeitado no relatório do ciclo.
+
 ## O alerta no Telegram
 
 Cada alerta diz, em texto claro: preço e specs, **quanto** está abaixo do

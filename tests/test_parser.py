@@ -1,6 +1,6 @@
 import pytest
 
-from parser import (parse_preco, parse_area, parse_area_construida, parse_tipo,
+from parser import (parse_preco, preco_eh_parcial, parse_area, parse_area_construida, parse_tipo,
                     parse_quartos, parse_vagas, parse_local, _num_br, normalizar_texto)
 
 
@@ -47,6 +47,24 @@ def test_parse_preco_maior_valor_vence_mesmo_com_taxa_ao_lado():
 ])
 def test_parse_preco_de_x_por_y(texto, esperado):
     assert parse_preco(texto) == esperado
+
+
+@pytest.mark.parametrize("texto", [
+    "Entrada de R$ 80.000 + 120 parcelas de R$ 2.000",
+    "R$ 50 mil de entrada e saldo financiado",
+    "Sinal R$ 30.000, depois prestações mensais",
+    "60x de R$ 3.500",
+    "Parcelas mensais de R$ 2.800",
+])
+def test_parse_preco_rejeita_entrada_e_parcela(texto):
+    assert parse_preco(texto) is None
+
+
+def test_parse_preco_total_com_entrada_usa_total():
+    texto = "Preço total R$ 500.000; entrada de R$ 80.000 + parcelas"
+    assert parse_preco(texto) == 500_000
+    assert preco_eh_parcial(texto, 80_000)
+    assert not preco_eh_parcial(texto, 500_000)
 
 
 # ---------------------------------------------------------------- área

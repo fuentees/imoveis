@@ -19,7 +19,7 @@ from bs4 import BeautifulSoup
 from analyzer import Imovel
 from parser import (parse_preco, parse_area, parse_area_construida,
                     parse_quartos, parse_vagas, parse_tipo, parse_local,
-                    titulo_curto, normalizar_texto)
+                    titulo_curto, normalizar_texto, preco_eh_parcial)
 import log
 
 _log = log.get(__name__)
@@ -157,7 +157,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
     """
     diagnostico = diagnostico if diagnostico is not None else {}
-    diagnostico.update(status="ok", paginas=0, erros=[])
+    diagnostico.update(status="ok", paginas=0, erros=[], precos_parciais=0)
     sess = session or requests.Session()
     sess.headers.update({"User-Agent": site_cfg.get("user_agent", DEFAULT_UA)})
     ua = sess.headers["User-Agent"]
@@ -240,7 +240,11 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             descricao = _selec(card, sel.get("descricao"))
             texto_card = _texto(card)
 
-            preco = parse_preco(_selec(card, sel.get("preco"))) or parse_preco(texto_card)
+            # O card inteiro dá contexto para não confundir entrada/parcela com preço total.
+            preco = parse_preco(texto_card)
+            parcial_detectado = (not preco and any(
+                termo in normalizar_texto(texto_card)
+                for termo in ("entrada", "sinal", "parcela", "mensais")))
             # area construída (ignora "560 m² de terreno" e afins)
             area = (parse_area(_selec(card, sel.get("area")))
                     or parse_area_construida(texto_card))
@@ -283,6 +287,9 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
 
             if usar_detalhe and (not respeitar_robots or _robots_permite(sess, im.url, ua)):
                 _enriquecer_com_detalhe(im, sess, sel_det, timeout, verify_ssl)
+                if preco_eh_parcial(im.descricao, im.preco):
+                    im.preco = None
+                    parcial_detectado = True
                 if not im.tipo:
                     im.tipo = parse_tipo(im.descricao)
                 time.sleep(delay_detalhe)
@@ -290,6 +297,8 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             permitidas = site_cfg.get("cidades_permitidas", [])
             if permitidas and normalizar_texto(im.cidade) not in {normalizar_texto(c) for c in permitidas}:
                 continue
+            if parcial_detectado:
+                diagnostico["precos_parciais"] += 1
             achados.append(im)
           except Exception as e:
             _log.info("     [i] %s: card ignorado (%s: %s)", nome, type(e).__name__, e)

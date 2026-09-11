@@ -58,6 +58,24 @@ def test_coleta_vazia_sinaliza_falha(fake_site, monkeypatch):
         raspar_todos({"sites": [fake_site]})
 
 
+def test_coleta_rejeita_entrada_como_preco_total(fake_site, monkeypatch):
+    _ROBOTS_CACHE.clear()
+    monkeypatch.setattr("scraper.time.sleep", lambda _: None)
+    html = ('<article><a href="/1"><h2>Casa Centro</h2></a>'
+            'Entrada de R$ 80.000 + 120 parcelas de R$ 2.000 · 100 m²</article>')
+    sess = Mock(headers={})
+    sess.get.side_effect = [
+        SimpleNamespace(status_code=404, text=""),
+        SimpleNamespace(text=html, encoding="utf-8", raise_for_status=lambda: None),
+    ]
+    diag = {}
+    ims = raspar_site({**fake_site, "detalhe": False}, session=sess, delay=0,
+                      diagnostico=diag)
+    assert len(ims) == 1 and ims[0].preco is None
+    assert diag["precos_parciais"] == 1
+    _ROBOTS_CACHE.clear()
+
+
 @pytest.mark.parametrize("sucesso", [True, False])
 def test_ciclo_so_marca_envio_confirmado(sucesso, monkeypatch):
     im = Imovel(url="https://x/1", descricao="espolio", preco=500000, area=100)

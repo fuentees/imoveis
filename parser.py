@@ -36,6 +36,12 @@ _FEE_ANTES = re.compile(r"condom|cond\.|iptu|taxa|alug|loca[çc]", re.IGNORECASE
 # Marca de aluguel que aparece DEPOIS do valor ("R$ 2.500/mês", "R$ 3.000 mensais").
 _FEE_DEPOIS = re.compile(r"^\s*(?:/\s*m[êe]s|por\s+m[êe]s|ao\s+m[êe]s|mensa|/\s*m[êe])",
                          re.IGNORECASE)
+_PARCIAL_ANTES = re.compile(
+    r"(?:entrada|sinal|ato|parcela(?:s)?(?:\s+mensais)?)\s*(?:de|no\s+valor\s+de)?\s*$"
+    r"|\b\d+\s*x\s*(?:de)?\s*$", re.IGNORECASE)
+_PARCIAL_DEPOIS = re.compile(
+    r"^\s*(?:de\s+)?(?:entrada|sinal)\b|^\s*(?:por|ao)?\s*m[êe]s\b"
+    r"|^\s*(?:em\s+)?\d+\s*(?:x|parcelas?)\b", re.IGNORECASE)
 
 
 def _taxa_ctx(t: str, ini: int, fim: int) -> bool:
@@ -43,6 +49,13 @@ def _taxa_ctx(t: str, ini: int, fim: int) -> bool:
     antes = t[max(0, ini - 18):ini]
     depois = t[fim:fim + 10]
     return bool(_FEE_ANTES.search(antes) or _FEE_DEPOIS.search(depois))
+
+
+def _parcial_ctx(t: str, ini: int, fim: int) -> bool:
+    """True quando o valor é entrada/sinal/parcela, e não o preço total."""
+    antes = t[max(0, ini - 45):ini]
+    depois = t[fim:fim + 35]
+    return bool(_PARCIAL_ANTES.search(antes) or _PARCIAL_DEPOIS.search(depois))
 
 
 # "de R$ X por R$ Y" / "por apenas R$ Y": o Y é o preço que vale.
@@ -72,10 +85,11 @@ def parse_preco(texto: str):
     if not texto:
         return None
     t = texto.replace("\xa0", " ")
-    candidatos = []  # (valor, taxa?, reduzido?)
+    candidatos = []  # (valor, taxa?, reduzido?, parcial?)
 
     def _add(val, ini, fim):
-        candidatos.append((val, _taxa_ctx(t, ini, fim), _preco_reduzido_ctx(t, ini)))
+        candidatos.append((val, _taxa_ctx(t, ini, fim), _preco_reduzido_ctx(t, ini),
+                           _parcial_ctx(t, ini, fim)))
 
     # "480 mil" / "1,2 milhão" / "480k"
     for m in re.finditer(rf"r?\$?\s*([\d.,]+)\s*({_MILHAO}|{_MIL})", t, re.IGNORECASE):
@@ -99,13 +113,33 @@ def parse_preco(texto: str):
             if v is not None and v >= 10_000:
                 _add(v, m.start(), m.end())
 
-    limpos = [(v, red) for v, taxa, red in candidatos if not taxa]
+    limpos = [(v, red) for v, taxa, red, parcial in candidatos if not taxa and not parcial]
     if not limpos:
         return None
     reduzidos = [v for v, red in limpos if red]
     if reduzidos:
         return max(reduzidos)
     return max(v for v, red in limpos)
+
+
+def preco_eh_parcial(texto: str, preco) -> bool:
+    """Confirma se `preco` aparece no texto identificado como entrada/parcela."""
+    if not texto or not preco:
+        return False
+    t = texto.replace("\xa0", " ")
+    padroes = [rf"r?\$?\s*([\d.,]+)\s*({_MILHAO}|{_MIL})",
+               r"r\$\s*([\d.]+(?:,\d{2})?)"]
+    for indice, padrao in enumerate(padroes):
+        for m in re.finditer(padrao, t, re.IGNORECASE):
+            valor = _num_br(m.group(1))
+            if valor is None:
+                continue
+            if indice == 0:
+                unidade = _strip_accents(m.group(2).lower())
+                valor *= 1_000_000 if unidade.startswith("milh") else 1_000
+            if abs(valor - preco) < 1 and _parcial_ctx(t, m.start(), m.end()):
+                return True
+    return False
 
 
 def _num_br(s: str):

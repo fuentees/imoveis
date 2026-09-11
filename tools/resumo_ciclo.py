@@ -12,10 +12,10 @@ def formatar(dados):
     linhas += ["### Cobertura nesta execução", "", "| Cidade | Anúncios |", "| --- | ---: |"]
     for cidade, total in sorted(dados.get("por_cidade", {}).items()):
         linhas.append(f"| {cidade} | {total} |")
-    linhas += ["", "### Fontes", "", "| Fonte | Estado | Páginas | Anúncios | Com preço e área |", "| --- | --- | ---: | ---: | ---: |"]
+    linhas += ["", "### Fontes", "", "| Fonte | Estado | Páginas | Anúncios | Com preço e área | Preços parciais rejeitados |", "| --- | --- | ---: | ---: | ---: | ---: |"]
     for fonte in dados.get("fontes", []):
         nome = fonte["nome"].replace("|", "/")
-        linhas.append(f"| {nome} | {fonte.get('status', 'desconhecido')} | {fonte.get('paginas', 0)} | {fonte.get('anuncios', 0)} | {fonte.get('com_preco_area', 0)} |")
+        linhas.append(f"| {nome} | {fonte.get('status', 'desconhecido')} | {fonte.get('paginas', 0)} | {fonte.get('anuncios', 0)} | {fonte.get('com_preco_area', 0)} | {fonte.get('precos_parciais', 0)} |")
     linhas += ["", "`limite_paginas` significa coleta parcial: aumente paginas na configuração para ampliar. Zero alertas novos pode ser normal; consulte os totais de coleta e as falhas acima."]
     return "\n".join(linhas)
 
