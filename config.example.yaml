@@ -9,6 +9,8 @@ scraper:
   delay_detalhe_segundos: 3
   verificar_ssl: true
   respeitar_robots: true
+  validar_detalhe_candidatos: true
+  exigir_detalhe_candidato: true
 analise:
   min_amostra: 10
   limiar_desconto: 0.4

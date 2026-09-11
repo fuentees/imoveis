@@ -9,6 +9,13 @@ def formatar(dados):
               f"Anúncios: **{dados.get('anuncios', 0)}** · Oportunidades: **{dados.get('oportunidades', 0)}** · Enviados: **{dados.get('enviados', 0)}** · Falhas de envio: **{dados.get('falhas_envio', 0)}**", ""]
     if dados.get("erro"):
         linhas += [f"**Falha:** {dados['erro']}", ""]
+    detalhes = dados.get("validacao_detalhes", {})
+    if detalhes:
+        linhas += ["### Leitura completa dos candidatos", "",
+                   f"Páginas lidas: **{detalhes.get('lidos', 0)}** · "
+                   f"Preços parciais rejeitados: **{detalhes.get('preco_parcial', 0)}** · "
+                   f"Negócios fora do escopo: **{detalhes.get('fora_escopo', 0)}** · "
+                   f"Indisponíveis: **{detalhes.get('bloqueados_ou_indisponiveis', 0)}**", ""]
     linhas += ["### Cobertura nesta execução", "", "| Cidade | Anúncios |", "| --- | ---: |"]
     for cidade, total in sorted(dados.get("por_cidade", {}).items()):
         linhas.append(f"| {cidade} | {total} |")

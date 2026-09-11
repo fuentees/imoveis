@@ -7,7 +7,8 @@ import yaml
 from analyzer import Imovel, _dedupe
 from main import rodar_ciclo, validar_config, _selecionar_diverso
 from notifier import Telegram
-from scraper import raspar_site, raspar_todos, _monta_url_pagina, _robots_permite, _ROBOTS_CACHE, DEFAULT_UA
+from scraper import (raspar_site, raspar_todos, validar_detalhes_candidatos,
+                     _monta_url_pagina, _robots_permite, _ROBOTS_CACHE, DEFAULT_UA)
 from storage import Storage
 from tools.validar_db import validar
 
@@ -73,6 +74,46 @@ def test_coleta_rejeita_entrada_como_preco_total(fake_site, monkeypatch):
                       diagnostico=diag)
     assert len(ims) == 1 and ims[0].preco is None
     assert diag["precos_parciais"] == 1
+    _ROBOTS_CACHE.clear()
+
+
+def test_leitura_final_rejeita_preco_de_entrada(monkeypatch):
+    _ROBOTS_CACHE.clear()
+    sess = Mock(headers={})
+    sess.get.side_effect = [
+        SimpleNamespace(status_code=404, text=""),
+        SimpleNamespace(text="Casa: entrada de R$ 80.000 e 120 parcelas",
+                        encoding="utf-8", raise_for_status=lambda: None),
+    ]
+    monkeypatch.setattr("scraper.requests.Session", lambda: sess)
+    im = Imovel(url="https://x/1", fonte="Fonte", preco=80_000, area=100)
+    relatorio = {}
+    cfg = {"scraper": {"validar_detalhe_candidatos": True,
+                       "exigir_detalhe_candidato": True,
+                       "delay_detalhe_segundos": 0},
+           "sites": [{"nome": "Fonte"}]}
+    assert validar_detalhes_candidatos([im], cfg, relatorio) == []
+    assert relatorio["validacao_detalhes"]["preco_parcial"] == 1
+    _ROBOTS_CACHE.clear()
+
+
+def test_leitura_final_rejeita_multipropriedade(monkeypatch):
+    _ROBOTS_CACHE.clear()
+    sess = Mock(headers={})
+    sess.get.side_effect = [
+        SimpleNamespace(status_code=404, text=""),
+        SimpleNamespace(text="Cota imobiliária em regime de multipropriedade por R$ 200.000",
+                        encoding="utf-8", raise_for_status=lambda: None),
+    ]
+    monkeypatch.setattr("scraper.requests.Session", lambda: sess)
+    im = Imovel(url="https://x/2", fonte="Fonte", preco=200_000, area=100)
+    relatorio = {}
+    cfg = {"scraper": {"validar_detalhe_candidatos": True,
+                       "exigir_detalhe_candidato": True,
+                       "delay_detalhe_segundos": 0},
+           "sites": [{"nome": "Fonte"}]}
+    assert validar_detalhes_candidatos([im], cfg, relatorio) == []
+    assert relatorio["validacao_detalhes"]["fora_escopo"] == 1
     _ROBOTS_CACHE.clear()
 
 

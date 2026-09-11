@@ -89,6 +89,9 @@ Valores anunciados como entrada, sinal, ato, parcela, prestação ou mensalidade
 não são tratados como preço do imóvel. Se o texto trouxer preço total e entrada,
 somente o total entra na comparação; se trouxer apenas a entrada, o anúncio fica
 fora da análise e aparece como preço parcial rejeitado no relatório do ciclo.
+Antes do envio, o bot abre a página completa de cada candidato. Por padrão, se
+essa leitura falhar ou for proibida, o alerta não é enviado. Cotas,
+multipropriedade, fração ideal, cessão de direitos e leilão também ficam fora.
 
 ## O alerta no Telegram
 

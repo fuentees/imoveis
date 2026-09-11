@@ -28,6 +28,11 @@ DEFAULT_UA = "ImovelBot/1.0 (monitoramento de anuncios)"
 
 # cache de robots.txt por domínio: netloc -> RobotFileParser (ou None se falhou)
 _ROBOTS_CACHE = {}
+_NEGOCIOS_FORA_ESCOPO = (
+    "multipropriedade", "time sharing", "cota imobiliaria", "fracao ideal",
+    "cessao de direitos", "direitos possessorios", "direito possessorio",
+    "imovel de leilao", "venda em leilao",
+)
 
 
 def _texto(node):
@@ -364,3 +369,58 @@ def raspar_todos(config, max_paginas=None, relatorio=None):
     if not todos and any(site.get("ativo", True) for site in config.get("sites", [])):
         raise RuntimeError("Nenhum anúncio coletado dos sites ativos; confira os logs e seletores.")
     return todos
+
+
+def validar_detalhes_candidatos(candidatos, config, relatorio=None):
+    """Lê a página completa dos finalistas e rejeita preço parcial/negócio atípico."""
+    scfg = config.get("scraper", {})
+    if not scfg.get("validar_detalhe_candidatos", False):
+        return candidatos
+    estrito = scfg.get("exigir_detalhe_candidato", True)
+    timeout = scfg.get("timeout_segundos", 20)
+    delay = scfg.get("delay_detalhe_segundos", 1)
+    sites = {s.get("nome"): s for s in config.get("sites", [])}
+    sess = requests.Session()
+    aprovados = []
+    diag = {"lidos": 0, "preco_parcial": 0, "fora_escopo": 0,
+            "bloqueados_ou_indisponiveis": 0}
+    for im in candidatos:
+        site = sites.get(im.fonte, {})
+        ua = site.get("user_agent", DEFAULT_UA)
+        sess.headers.update({"User-Agent": ua})
+        respeitar = site.get("respeitar_robots", scfg.get("respeitar_robots", True))
+        if respeitar and not _robots_permite(sess, im.url, ua, timeout=min(timeout, 10)):
+            diag["bloqueados_ou_indisponiveis"] += 1
+            if not estrito:
+                aprovados.append(im)
+            continue
+        try:
+            resposta = _baixar(sess, im.url, timeout,
+                               site.get("verificar_ssl", scfg.get("verificar_ssl", True)),
+                               tentativas=2)
+        except Exception as exc:
+            _log.info("  [i] validação final indisponível (%s): %s", im.url[-50:], exc)
+            diag["bloqueados_ou_indisponiveis"] += 1
+            if not estrito:
+                aprovados.append(im)
+            continue
+        soup = BeautifulSoup(resposta.text, "lxml")
+        for tag in soup(["script", "style", "nav", "header", "footer"]):
+            tag.extract()
+        texto = _texto(soup.body or soup)[:12000]
+        diag["lidos"] += 1
+        if preco_eh_parcial(texto, im.preco):
+            diag["preco_parcial"] += 1
+            continue
+        normalizado = normalizar_texto(texto)
+        if any(termo in normalizado for termo in _NEGOCIOS_FORA_ESCOPO):
+            diag["fora_escopo"] += 1
+            continue
+        if len(texto) > len(im.descricao or ""):
+            im.descricao = texto[:4000]
+        aprovados.append(im)
+        if delay:
+            time.sleep(delay)
+    if relatorio is not None:
+        relatorio["validacao_detalhes"] = diag
+    return aprovados

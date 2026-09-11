@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
 import log
-from scraper import raspar_todos
+from scraper import raspar_todos, validar_detalhes_candidatos
 from analyzer import analisar, comps_do_historico
 from storage import Storage
 from notifier import Telegram, formatar_alerta
@@ -152,6 +152,7 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         preco_m2_max=a.get("preco_m2_max", 60_000),
         historico=historico,
     )
+    ops = validar_detalhes_candidatos(ops, config, relatorio)
     _log.info("Oportunidades detectadas: %s", len(ops))
     relatorio["oportunidades"] = len(ops)
 
