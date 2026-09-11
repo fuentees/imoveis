@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 from collections import Counter
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 import log
 from scraper import raspar_todos
@@ -75,6 +76,8 @@ def validar_config(config):
         "analise": {"min_amostra": (2, None), "limiar_desconto": (0, 1),
                     "realerta_queda": (0, 1), "historico_dias": (0, None),
                     "max_alertas_por_ciclo": (1, None),
+                    "max_alertas_por_dominio": (1, None),
+                    "max_alertas_por_cidade": (1, None),
                     "preco_min": (0, None), "preco_m2_min": (0, None), "preco_m2_max": (0, None)},
         "scraper": {"delay_segundos": (0, None), "delay_detalhe_segundos": (0, None)},
         "agendamento": {"intervalo_minutos": (0.01, None)},
@@ -103,6 +106,32 @@ def _deve_realertar(im, preco_anterior, queda_min):
     if not (preco_anterior and im.preco):
         return False
     return im.preco <= preco_anterior * (1 - queda_min)
+
+
+def _selecionar_diverso(pendentes, limite, max_dominio=2, max_cidade=3):
+    """Escolhe os maiores scores sem deixar um portal ou cidade dominar o ciclo."""
+    escolhidos = []
+    usados = set()
+    por_dominio = Counter()
+    por_cidade = Counter()
+    for indice, im in enumerate(pendentes):
+        dominio = urlsplit(im.url).netloc.lower().removeprefix("www.") or im.fonte
+        cidade = (im.cidade or "").casefold()
+        if por_dominio[dominio] >= max_dominio or por_cidade[cidade] >= max_cidade:
+            continue
+        escolhidos.append(im)
+        usados.add(indice)
+        por_dominio[dominio] += 1
+        por_cidade[cidade] += 1
+        if len(escolhidos) == limite:
+            return escolhidos
+    # Se não houver diversidade suficiente, completa por score para não travar a fila.
+    for indice, im in enumerate(pendentes):
+        if indice not in usados:
+            escolhidos.append(im)
+            if len(escolhidos) == limite:
+                break
+    return escolhidos
 
 
 def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=None):
@@ -151,9 +180,13 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         pendentes.append(im)
 
     novos = len(pendentes)
-    fila = pendentes if dry_run else pendentes[:limite_alertas]
+    fila = pendentes if dry_run else _selecionar_diverso(
+        pendentes, limite_alertas,
+        max_dominio=a.get("max_alertas_por_dominio", 2),
+        max_cidade=a.get("max_alertas_por_cidade", 3))
     adiados = 0 if dry_run else max(0, novos - len(fila))
     enviados = falhas = 0
+    enviados_lista = []
     for im in fila:
         msg = formatar_alerta(im)
         if dry_run:
@@ -162,6 +195,7 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         if tg and tg.enviar(msg):
             storage.marcar_alertado(im.url, im.score, im.preco)   # só marca se enviou
             enviados += 1
+            enviados_lista.append(im)
         else:
             falhas += 1        # não marca: tenta de novo no próximo ciclo
         time.sleep(1)          # respeita rate limit do Telegram
@@ -172,7 +206,10 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         _log.info("Alertas novos: %s  |  enviados: %s  |  adiados: %s  |  falharam: %s",
                   novos, enviados, adiados, falhas)
     relatorio.update(novos=novos, enviados=enviados, adiados=adiados,
-                     falhas_envio=falhas, fim=datetime.now(timezone.utc).isoformat())
+                     falhas_envio=falhas,
+                     fontes_enviadas=dict(Counter(im.fonte for im in enviados_lista)),
+                     cidades_enviadas=dict(Counter(im.cidade for im in enviados_lista)),
+                     fim=datetime.now(timezone.utc).isoformat())
     if falhas:
         raise RuntimeError(f"Falha no envio de {falhas} alerta(s); serão tentados no próximo ciclo.")
     return novos

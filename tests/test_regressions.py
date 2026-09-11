@@ -5,7 +5,7 @@ import pytest
 import yaml
 
 from analyzer import Imovel, _dedupe
-from main import rodar_ciclo, validar_config
+from main import rodar_ciclo, validar_config, _selecionar_diverso
 from notifier import Telegram
 from scraper import raspar_site, raspar_todos, _monta_url_pagina, _robots_permite, _ROBOTS_CACHE, DEFAULT_UA
 from storage import Storage
@@ -124,6 +124,22 @@ def test_persistencia_em_lote(monkeypatch):
         assert len(st.carregar_comparaveis()) == 3
     finally:
         st.fechar()
+
+
+def test_selecao_diversifica_dominios_e_cidades():
+    ims = [
+        Imovel(url="https://portal.test/1", fonte="Portal", cidade="Santos", score=100),
+        Imovel(url="https://portal.test/2", fonte="Portal", cidade="Santos", score=99),
+        Imovel(url="https://portal.test/3", fonte="Portal", cidade="Santos", score=98),
+        Imovel(url="https://imob-a.test/1", fonte="A", cidade="Santos", score=90),
+        Imovel(url="https://imob-b.test/1", fonte="B", cidade="Guarujá", score=80),
+        Imovel(url="https://imob-c.test/1", fonte="C", cidade="Bertioga", score=70),
+    ]
+    escolhidos = _selecionar_diverso(ims, 5, max_dominio=2, max_cidade=3)
+    assert [im.url for im in escolhidos[:4]] == [
+        "https://portal.test/1", "https://portal.test/2",
+        "https://imob-a.test/1", "https://imob-b.test/1"]
+    assert len(escolhidos) == 5
 
 
 @pytest.mark.parametrize("status,body,esperado", [(200,{"ok":True},True),(200,{"ok":False},False),(429,{},False),(500,{},False)])

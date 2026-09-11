@@ -74,6 +74,8 @@ Já calibrado para o litoral sul de SP a partir de dry-runs reais:
   (casas de 670 m², coberturas). Grupos menores não geram alerta de preço.
 - `max_alertas_por_ciclo: 10` — evita uma enxurrada de mensagens; os candidatos
   adiados continuam na fila e são enviados nos ciclos seguintes.
+- `max_alertas_por_dominio: 2` e `max_alertas_por_cidade: 3` — preservam o
+  ranking, mas impedem que um único portal ou município ocupe todo o ciclo.
 - **Palavra-chave não dispara sozinha.** Espólio, inventário, herança e urgência
   aumentam a prioridade somente depois que o preço baixo foi comprovado contra
   pelo menos dez comparáveis. Isso evita anúncios comuns com texto publicitário.

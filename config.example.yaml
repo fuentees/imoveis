@@ -20,6 +20,8 @@ analise:
   historico_dias: 180
   realerta_queda: 0.1
   max_alertas_por_ciclo: 10
+  max_alertas_por_dominio: 2
+  max_alertas_por_cidade: 3
 agendamento:
   intervalo_minutos: 180
 sites:
