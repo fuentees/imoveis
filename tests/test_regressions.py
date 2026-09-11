@@ -142,6 +142,13 @@ def test_selecao_diversifica_dominios_e_cidades():
     assert len(escolhidos) == 5
 
 
+def test_limite_por_dominio_e_estrito():
+    ims = [Imovel(url=f"https://portal.test/{i}", fonte="Portal",
+                 cidade="Santos", score=100 - i) for i in range(6)]
+    escolhidos = _selecionar_diverso(ims, 5, max_dominio=2, max_cidade=3)
+    assert len(escolhidos) == 2
+
+
 @pytest.mark.parametrize("status,body,esperado", [(200,{"ok":True},True),(200,{"ok":False},False),(429,{},False),(500,{},False)])
 def test_telegram_verifica_resposta(monkeypatch, status, body, esperado):
     monkeypatch.setattr("notifier.requests.post", lambda *a, **k: SimpleNamespace(status_code=status, text="erro", json=lambda: body))

@@ -111,26 +111,18 @@ def _deve_realertar(im, preco_anterior, queda_min):
 def _selecionar_diverso(pendentes, limite, max_dominio=2, max_cidade=3):
     """Escolhe os maiores scores sem deixar um portal ou cidade dominar o ciclo."""
     escolhidos = []
-    usados = set()
     por_dominio = Counter()
     por_cidade = Counter()
-    for indice, im in enumerate(pendentes):
+    for im in pendentes:
         dominio = urlsplit(im.url).netloc.lower().removeprefix("www.") or im.fonte
         cidade = (im.cidade or "").casefold()
         if por_dominio[dominio] >= max_dominio or por_cidade[cidade] >= max_cidade:
             continue
         escolhidos.append(im)
-        usados.add(indice)
         por_dominio[dominio] += 1
         por_cidade[cidade] += 1
         if len(escolhidos) == limite:
             return escolhidos
-    # Se não houver diversidade suficiente, completa por score para não travar a fila.
-    for indice, im in enumerate(pendentes):
-        if indice not in usados:
-            escolhidos.append(im)
-            if len(escolhidos) == limite:
-                break
     return escolhidos
 
 
