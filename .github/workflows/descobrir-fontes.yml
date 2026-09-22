@@ -3,7 +3,12 @@ name: descobrir-fontes
 on:
   schedule:
     - cron: "43 11 * * 3"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      somente_sondagem:
+        description: "Pula a busca no OpenStreetMap e só sonda tools/fontes_candidatas.yaml"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ jobs:
           cache: pip
       - run: python -m pip install -r requirements.txt
       - name: Procura e verifica novas imobiliárias
+        if: ${{ !inputs.somente_sondagem }}
         run: python tools/descobrir_fontes.py
       - name: Sonda páginas candidatas (tools/fontes_candidatas.yaml)
         if: always()
@@ -38,4 +44,4 @@ jobs:
             fontes-sondadas.json
             fontes-sondadas.md
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: warn
