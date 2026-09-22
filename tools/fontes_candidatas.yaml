@@ -1,194 +1,100 @@
 # Candidatas pesquisadas em 22/09/2026 para Morumbi, Barueri/Alphaville/Tamboré,
 # Santana de Parnaíba e Granja Viana (Cotia). Rodar tools/sondar_fontes.py.
-- nome: Na Granja - Cotia
-  cidade: Cotia
-  base_url: https://nagranjaimoveis.com.br
-  listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda/cotia-sp?pagina={page}
-- nome: Na Granja - Todas
-  cidade: Cotia
-  base_url: https://nagranjaimoveis.com.br
-  listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda?pagina={page}
-- nome: Unic - listagem venda
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/imoveis/venda
-  detalhar: true
-- nome: Unic - home
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/
-  detalhar: true
-- nome: Achei Morumbi - home
+- nome: Guedala - SP p2
   cidade: São Paulo
-  base_url: https://acheimorumbi.com.br
-  listagem_url: https://acheimorumbi.com.br/
+  base_url: https://www.guedalaimoveis.com.br
+  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/2/
   seletores: &id001
-    card: a.property-card
+    card: div.box__txtcard
+    link: .box__verdetalhes a
+    bairro: h3.bairro-resultado-titulo
+  detalhar: true
+- nome: Guedala - Morumbi
+  cidade: São Paulo
+  base_url: https://www.guedalaimoveis.com.br
+  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+  seletores: *id001
+- nome: Viver Morumbi - Morumbi
+  cidade: São Paulo
+  base_url: https://www.imobiliariavivermorumbi.com.br
+  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+  seletores: &id002
+    card: div:has(> div.block-imovel.bvalor)
+    link: a.btnDet
+  detalhar: true
+- nome: Viver Morumbi - SP p2
+  cidade: São Paulo
+  base_url: https://www.imobiliariavivermorumbi.com.br
+  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/2/
+  seletores: *id002
+- nome: Maber - Morumbi
+  cidade: São Paulo
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+  seletores: *id001
+  detalhar: true
+- nome: Plus - Morumbi p2
+  cidade: São Paulo
+  base_url: https://www.plusimoveis.com.br
+  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/2
+  seletores: &id003
+    card: a:has(.box-one-infos)
     link: a
-    titulo: .property-card-type
-    bairro: .property-card-location
-    area: .property-card-spec
-  detalhar: true
-- nome: Achei Morumbi - imoveis
+    titulo: .tipo-bairro h4
+    bairro: .tipo-bairro h3
+- nome: Plus - Vila Andrade
   cidade: São Paulo
-  base_url: https://acheimorumbi.com.br
-  listagem_url: https://acheimorumbi.com.br/imoveis
-  seletores: *id001
-  detalhar: true
-- nome: Achei Morumbi - venda
-  cidade: São Paulo
-  base_url: https://acheimorumbi.com.br
-  listagem_url: https://acheimorumbi.com.br/imoveis?finalidade=venda&pagina={page}
-  seletores: *id001
-  detalhar: true
-- nome: Felt - home
+  base_url: https://www.plusimoveis.com.br
+  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/vila-andrade
+  seletores: *id003
+- nome: Felt - venda
   cidade: Barueri
   base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/
-  seletores: &id002
+  listagem_url: https://www.feltimoveis.com.br/venda
+  seletores: &id004
     card: a[href*='imovel/']:has(h3)
     link: a
     titulo: h3
     bairro: .h6
     area: div[title='Área'] span
   detalhar: true
-- nome: Felt - imoveis venda
+- nome: Felt - venda p2
   cidade: Barueri
   base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/imoveis/venda
-  seletores: *id002
+  listagem_url: https://www.feltimoveis.com.br/venda?pagina=2
+  seletores: *id004
   detalhar: true
-- nome: Felt - busca
+- nome: Betta - comprar
   cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/busca?finalidade=venda
-  seletores: *id002
-  detalhar: true
-- nome: Nunes - Barueri
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
-  seletores: &id003
-    card: div.muda_card2
-    link: a.carousel-cell
-  detalhar: true
-- nome: Nunes - Barueri p2
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri?pagina=2
-  seletores: *id003
-  detalhar: true
-- nome: Nunes - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba
-  seletores: *id003
-  detalhar: true
-- nome: Plus - Morumbi
-  cidade: São Paulo
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi
-  seletores: &id004
-    card: a:has(.box-one-infos)
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar
+  seletores:
+    card: div.property-info
     link: a
-    titulo: .tipo-bairro h4
-    bairro: .tipo-bairro h3
   detalhar: true
-- nome: Plus - São Paulo
-  cidade: São Paulo
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/
-  seletores: *id004
-  detalhar: true
-- nome: Viver Morumbi - SP
-  cidade: São Paulo
-  base_url: https://www.imobiliariavivermorumbi.com.br
-  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/
-  seletores: *id004
-  detalhar: true
-- nome: Viver Morumbi - Morumbi
-  cidade: São Paulo
-  base_url: https://www.imobiliariavivermorumbi.com.br
-  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/
-  seletores: *id004
-  detalhar: true
-- nome: Guedala - SP
-  cidade: São Paulo
-  base_url: https://www.guedalaimoveis.com.br
-  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/
-  seletores: *id004
-  detalhar: true
-- nome: Maber - Morumbi
-  cidade: São Paulo
-  base_url: https://www.maber.com.br
-  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
-  seletores: *id004
-  detalhar: true
-- nome: J Morais - home
+- nome: J Morais - imoveis
   cidade: Barueri
   base_url: https://www.jmoraisimoveis.com.br
-  listagem_url: https://www.jmoraisimoveis.com.br/
+  listagem_url: https://www.jmoraisimoveis.com.br/imoveis
   detalhar: true
-- nome: Imobiliárias Alphaville - home
-  cidade: Barueri
-  base_url: https://imobiliariasalphaville.com.br
-  listagem_url: https://imobiliariasalphaville.com.br/
-  detalhar: true
-- nome: Morando em Alphaville - home
+- nome: Morando em Alphaville - buscar
   cidade: Barueri
   base_url: https://www.morandoemalphaville.com
-  listagem_url: https://www.morandoemalphaville.com/
-  seletores: &id005
+  listagem_url: https://www.morandoemalphaville.com/buscar
+  seletores:
     card: a.destaquecard
     link: a
     titulo: .destaquecard__name
     bairro: .destaquecard__location
     descricao: .destaquecard__description
   detalhar: true
-- nome: Morando em Alphaville - venda
-  cidade: Barueri
-  base_url: https://www.morandoemalphaville.com
-  listagem_url: https://www.morandoemalphaville.com/imoveis/venda
-  seletores: *id005
+- nome: Unic - buscar
+  cidade: Cotia
+  base_url: https://www.unicimoveis.com.br
+  listagem_url: https://www.unicimoveis.com.br/buscar/
   detalhar: true
-- nome: Barueri Imóveis - buscar
-  cidade: Barueri
-  base_url: https://barueriimoveis-sp.com.br
-  listagem_url: https://barueriimoveis-sp.com.br/buscar/comprar/todos/todas-cidades/todos-bairros?page={page}
-  seletores:
-    card: div.property-item
-    link: a
-    titulo: h2
-  detalhar: true
-- nome: Barueri Imóveis - home
-  cidade: Barueri
-  base_url: https://barueriimoveis-sp.com.br
-  listagem_url: https://barueriimoveis-sp.com.br/
-  seletores:
-    card: article.box-featured
-    link: a
-    bairro: h3 span
-  detalhar: true
-- nome: Melhores Imóveis - home
-  cidade: Barueri
-  base_url: https://melhoresimoveis.com.br
-  listagem_url: https://melhoresimoveis.com.br/
-  detalhar: true
-- nome: Betta - home
-  cidade: Barueri
-  base_url: https://bettaimoveisalphaville.com.br
-  listagem_url: https://bettaimoveisalphaville.com.br/
-  seletores:
-    card: div.property-info
-    link: a
-  detalhar: true
-- nome: Panamby Consultoria - home
-  cidade: São Paulo
-  base_url: https://www.panambyconsultoria.com.br
-  listagem_url: https://www.panambyconsultoria.com.br/
-  detalhar: true
-- nome: JSI - busca venda
-  cidade: São Paulo
-  base_url: https://jsi.com.br
-  listagem_url: https://jsi.com.br/busca/v1/venda
+- nome: Unic - buscar venda
+  cidade: Cotia
+  base_url: https://www.unicimoveis.com.br
+  listagem_url: https://www.unicimoveis.com.br/buscar/venda
   detalhar: true
