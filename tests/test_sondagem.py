@@ -21,7 +21,7 @@ def test_sondagem_escolhe_seletores_que_extraem_preco_e_area():
         "card": "div.thumbnail_one", "link": "a.property-card-link",
         "preco": ".property_pricing", "area": ".thum_data", "bairro": ".property_card_address"}}]}
     r = sondar({"nome": "X", "listagem_url": "https://x.test/imoveis/a-venda/barueri-sp?pagina={page}",
-                "cidade": "Barueri"}, cfg, Sessao())
+                "cidade": "Barueri", "detalhe": False, "cidades_permitidas": ["Barueri"]}, cfg, Sessao())
     assert r["status"] == "ok" and r["preset"] == "Praedium"
     assert r["com_preco_area"] == 1 and r["cidades"][0][0] == "Barueri"
 

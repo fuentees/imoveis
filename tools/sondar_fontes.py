@@ -98,7 +98,7 @@ def sondar(candidato, config, sess):
     testes += presets(config)
     melhor = None
     for nome, sel in testes:
-        cfg = dict(cidade_auto=True, detalhe=False, **candidato)
+        cfg = {"cidade_auto": True, "detalhe": False, **candidato}
         cfg.update(base_url=candidato.get("base_url") or url, listagem_url=url,
                    paginas=1, seletores=sel)
         diag = {}

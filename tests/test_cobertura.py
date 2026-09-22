@@ -9,7 +9,7 @@ from scraper import raspar_site, raspar_todos
 from main import executar_ciclo
 from tools.resumo_ciclo import formatar
 
-CIDADES = ["São Paulo", "Itanhaém", "Mongaguá", "Praia Grande", "Santos", "Peruíbe", "São Vicente", "Guarujá", "Bertioga", "Caraguatatuba", "Ubatuba", "São Sebastião", "Ilhabela"]
+CIDADES = ["São Paulo", "Itanhaém", "Mongaguá", "Praia Grande", "Santos", "Peruíbe", "São Vicente", "Guarujá", "Bertioga", "Caraguatatuba", "Ubatuba", "São Sebastião", "Ilhabela", "Barueri", "Santana de Parnaíba", "Cotia"]
 
 
 @pytest.mark.parametrize("cidade", CIDADES)
@@ -92,3 +92,17 @@ def test_relatorio_unifica_nome_das_cidades(monkeypatch):
     ims = raspar_todos({"cidades_monitoradas": ["São Paulo"], "sites": [{"nome": "teste", "listagem_url": "https://x/lista"}]}, relatorio=relatorio)
     assert ims[0].cidade == "São Paulo"
     assert relatorio["fontes"][0]["anuncios"] == 1
+
+
+def test_bairro_apos_separador_no_titulo_do_link(monkeypatch):
+    html = """<div class='c'><a class='det' href='/imovel/1' title='Cobertura para Venda - Jardim Guedala'>ver</a>
+    R$ 2.150.000,00 347 m² área útil 4 quartos</div>"""
+    sess = Mock(headers={})
+    sess.get.return_value = SimpleNamespace(text=html, encoding="utf-8", raise_for_status=lambda: None)
+    cfg = dict(nome="teste", base_url="https://x", listagem_url="https://x/venda", cidade="São Paulo",
+               bairro_apos=" - ", seletores=dict(card="div.c", link="a.det",
+                                                  bairro=dict(css="a.det", atributo="title")))
+    monkeypatch.setattr("scraper.time.sleep", lambda _: None)
+    ims = raspar_site(cfg, session=sess, respeitar_robots=False)
+    assert ims[0].bairro == "Jardim Guedala" and ims[0].cidade == "São Paulo"
+    assert ims[0].preco == 2150000 and ims[0].area == 347
