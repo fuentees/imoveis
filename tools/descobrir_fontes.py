@@ -25,6 +25,10 @@ RELACOES_OSM = {
     "Caraguatatuba": 298259, "Ubatuba": 298203, "São Sebastião": 298504,
     "Ilhabela": 298379,
 }
+# Municípios sem relação OSM anotada: a área é localizada pelo código IBGE.
+CODIGOS_IBGE = {
+    "Barueri": "3505708", "Santana de Parnaíba": "3547304", "Cotia": "3513009",
+}
 CHAVES_SITE = ("website", "contact:website", "url")
 TERMOS_VENDA = ("venda", "comprar", "imoveis", "imóveis", "properties")
 TERMOS_LISTAGEM = ("/imoveis", "/imóveis", "/busca", "/buscar", "pesquisa-de-imoveis")
@@ -48,11 +52,14 @@ def _dominio(url):
 
 def _consulta_cidade(cidade, session, endpoint=OVERPASS_URL):
     relacao = RELACOES_OSM.get(cidade)
-    if not relacao:
+    if relacao:
+        area = f"area({3_600_000_000 + relacao})->.cidade;"
+    elif cidade in CODIGOS_IBGE:
+        area = f'area["IBGE:GEOCODIGO"="{CODIGOS_IBGE[cidade]}"]["admin_level"="8"]->.cidade;'
+    else:
         raise ValueError(f"Município sem relação OSM configurada: {cidade}")
-    area = 3_600_000_000 + relacao
     consulta = f'''[out:json][timeout:45];
-area({area})->.cidade;
+{area}
 (
   nwr["office"="estate_agent"](area.cidade);
   nwr["shop"="estate_agent"](area.cidade);
