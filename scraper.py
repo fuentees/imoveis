@@ -161,6 +161,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       respeitar_robots: false    -> ignora o robots.txt DESTE site.
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
       bairro_apos: " - "         -> o bairro é o trecho depois do último separador.
+      bairro_url_segmento: -2    -> sem bairro no card, usa esse trecho do caminho da URL.
     """
     diagnostico = diagnostico if diagnostico is not None else {}
     diagnostico.update(status="ok", paginas=0, erros=[], precos_parciais=0)
@@ -258,6 +259,11 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             vagas = parse_vagas(_selec(card, sel.get("vagas"))) or parse_vagas(texto_card)
 
             bairro = _selec(card, sel.get("bairro"))
+            seg = site_cfg.get("bairro_url_segmento")   # .../Vila-Sao-Luiz/316691 com -2
+            if seg is not None and not bairro:
+                partes = [x for x in urlsplit(link).path.split("/") if x]
+                if len(partes) >= abs(seg):
+                    bairro = partes[seg].replace("-", " ").strip()
             cidade_txt = _selec(card, sel.get("cidade"))
             cidade = re.sub(r"\s*[-/,]\s*SP$", "", cidade_txt, flags=re.I).strip() or cidade_cfg
             sep_bairro = site_cfg.get("bairro_apos")   # "Casa para Venda - Morumbi" -> "Morumbi"

@@ -106,3 +106,15 @@ def test_bairro_apos_separador_no_titulo_do_link(monkeypatch):
     ims = raspar_site(cfg, session=sess, respeitar_robots=False)
     assert ims[0].bairro == "Jardim Guedala" and ims[0].cidade == "São Paulo"
     assert ims[0].preco == 2150000 and ims[0].area == 347
+
+
+def test_bairro_do_segmento_da_url(monkeypatch):
+    html = """<div class='c'><a class='f' href='comprar/Barueri/Casa/Sobrado/Vila-Sao-Luiz/316691'>foto</a>
+    R$ 450.000,00 125 m² 2 quartos</div>"""
+    sess = Mock(headers={})
+    sess.get.return_value = SimpleNamespace(text=html, encoding="utf-8", raise_for_status=lambda: None)
+    cfg = dict(nome="teste", base_url="https://x", listagem_url="https://x/comprar/Barueri", cidade="Barueri",
+               bairro_url_segmento=-2, seletores=dict(card="div.c", link="a.f"))
+    monkeypatch.setattr("scraper.time.sleep", lambda _: None)
+    ims = raspar_site(cfg, session=sess, respeitar_robots=False)
+    assert ims[0].bairro == "Vila Sao Luiz" and ims[0].cidade == "Barueri"

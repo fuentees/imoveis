@@ -1,4 +1,4 @@
-# Fontes verificadas em 10/09/2026. Até 20 páginas por busca/ciclo.
+# Fontes verificadas em 10/09/2026 e 22/09/2026 (Morumbi, Alphaville, Granja Viana). Até 20 páginas por busca/ciclo.
 # Lista e limites documentados em docs/fontes.md.
 # Credenciais via TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no GitHub Secrets.
 telegram:
@@ -849,6 +849,7 @@ sites:
   cidade: Barueri
   cidades_permitidas:
   - Barueri
+  bairro_url_segmento: -2
   paginas: 1
   detalhe: true
   seletores:
@@ -861,6 +862,7 @@ sites:
   cidade: Santana de Parnaíba
   cidades_permitidas:
   - Santana de Parnaíba
+  bairro_url_segmento: -2
   paginas: 1
   detalhe: true
   seletores:

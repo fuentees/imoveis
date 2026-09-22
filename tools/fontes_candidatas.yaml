@@ -1,123 +1,37 @@
-- nome: Na Granja Imóveis - Cotia
-  ativo: true
-  base_url: https://nagranjaimoveis.com.br
-  listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda/cotia-sp?pagina={page}
-  cidade: Cotia
-  cidade_auto: true
-  cidades_permitidas:
-  - Cotia
-  paginas: 20
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div.thumbnail_one
-    link: a.property-card-link
-    titulo: .property_card_heading > .color-primary
-    descricao: .card_property_description
-    preco: div.property_pricing
-    area: .thum_data
-    bairro: .property_card_address
-- nome: Unic Imóveis - Granja Viana
-  ativo: true
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/buscar/venda
-  cidade: Cotia
-  cidade_auto: true
-  cidades_permitidas:
-  - Cotia
-  paginas: 1
-  detalhe: false
-  seletores:
-    card: a.MuiCard-root
-    link: a
-- nome: Plus Imóveis - Morumbi
-  ativo: true
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/{page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  paginas: 20
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: a:has(.box-one-infos)
-    link: a
-    titulo: .tipo-bairro h4
-    bairro: .tipo-bairro h3
-- nome: Viver Morumbi - Morumbi
-  ativo: true
-  base_url: https://www.imobiliariavivermorumbi.com.br
-  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/{page}/
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_apos: ' - '
-  paginas: 20
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div:has(> div.block-imovel.bvalor)
-    link: a.btnDet
-    bairro:
-      css: a.btnDet
-      atributo: title
-- nome: Guedala Imóveis - Morumbi
-  ativo: true
-  base_url: https://www.guedalaimoveis.com.br
-  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/{page}/
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_apos: ' - '
-  paginas: 10
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div.box__txtcard
-    link: .box__verdetalhes a
-    bairro:
-      css: .box__verdetalhes a
-      atributo: title
-- nome: Felt Imóveis - Alphaville (destaques)
-  ativo: true
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/
+# Fila de candidatas ainda NÃO ativadas (sondadas em 22/09/2026).
+# O workflow descobrir-fontes roda tools/sondar_fontes.py sobre esta lista;
+# quando uma delas extrair preço e área com consistência, mova o bloco para
+# config.example.yaml. Motivo de cada pendência em docs/fontes.md.
+- nome: Morando em Alphaville
   cidade: Barueri
-  cidade_auto: true
-  bairro_inclui_cidade: true
-  cidades_permitidas:
-  - Barueri
-  - Santana de Parnaíba
-  paginas: 1
-  detalhe: false
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/
   seletores:
-    card: a[href*='imovel/']:has(h3)
+    card: a.destaquecard
     link: a
-    titulo: h3
-    bairro: .h6
-    area: div[title='Área'] span
-- nome: Imobiliária Nunes - Barueri
-  ativo: true
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+- nome: Achei Morumbi
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis
+  seletores:
+    card: a.property-card
+    link: a
+    titulo: .property-card-type
+    bairro: .property-card-location
+    area: .property-card-spec
+- nome: Betta Imóveis - Alphaville
   cidade: Barueri
-  cidades_permitidas:
-  - Barueri
-  paginas: 1
-  detalhe: true
-  seletores:
-    card: div.muda_card2
-    link: a.carousel-cell
-- nome: Imobiliária Nunes - Santana de Parnaíba
-  ativo: true
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba
-  cidade: Santana de Parnaíba
-  cidades_permitidas:
-  - Santana de Parnaíba
-  paginas: 1
-  detalhe: true
-  seletores:
-    card: div.muda_card2
-    link: a.carousel-cell
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar/pag-{page}
+  pular_param_pagina_1: true
+- nome: Lopes Maber - Morumbi
+  cidade: São Paulo
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+- nome: Melhores Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://melhoresimoveis.com.br
+  listagem_url: https://melhoresimoveis.com.br/
