@@ -100,12 +100,11 @@
 - nome: Imobiliária Nunes - Barueri
   ativo: true
   base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri?pagina={page}
+  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
   cidade: Barueri
   cidades_permitidas:
   - Barueri
-  paginas: 3
-  pular_param_pagina_1: true
+  paginas: 1
   detalhe: true
   seletores:
     card: div.muda_card2
@@ -113,12 +112,11 @@
 - nome: Imobiliária Nunes - Santana de Parnaíba
   ativo: true
   base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba?pagina={page}
+  listagem_url: https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba
   cidade: Santana de Parnaíba
   cidades_permitidas:
   - Santana de Parnaíba
-  paginas: 3
-  pular_param_pagina_1: true
+  paginas: 1
   detalhe: true
   seletores:
     card: div.muda_card2
