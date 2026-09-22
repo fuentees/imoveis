@@ -98,9 +98,9 @@ def sondar(candidato, config, sess):
     testes += presets(config)
     melhor = None
     for nome, sel in testes:
-        cfg = dict(nome=candidato["nome"], base_url=candidato.get("base_url") or url,
-                   listagem_url=url, cidade=candidato.get("cidade", ""), cidade_auto=True,
-                   paginas=1, detalhe=False, seletores=sel)
+        cfg = dict(cidade_auto=True, detalhe=False, **candidato)
+        cfg.update(base_url=candidato.get("base_url") or url, listagem_url=url,
+                   paginas=1, seletores=sel)
         diag = {}
         try:
             ims = raspar_site(cfg, delay=0, session=cache, respeitar_robots=False, diagnostico=diag)

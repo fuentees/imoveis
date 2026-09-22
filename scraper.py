@@ -160,6 +160,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       seletores.detalhe: {...}   -> seletores da página de detalhe (opcional).
       respeitar_robots: false    -> ignora o robots.txt DESTE site.
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
+      bairro_apos: " - "         -> o bairro é o trecho depois do último separador.
     """
     diagnostico = diagnostico if diagnostico is not None else {}
     diagnostico.update(status="ok", paginas=0, erros=[], precos_parciais=0)
@@ -259,6 +260,9 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             bairro = _selec(card, sel.get("bairro"))
             cidade_txt = _selec(card, sel.get("cidade"))
             cidade = re.sub(r"\s*[-/,]\s*SP$", "", cidade_txt, flags=re.I).strip() or cidade_cfg
+            sep_bairro = site_cfg.get("bairro_apos")   # "Casa para Venda - Morumbi" -> "Morumbi"
+            if sep_bairro and sep_bairro in bairro:
+                bairro = bairro.rsplit(sep_bairro, 1)[1].strip()
             if site_cfg.get("bairro_inclui_cidade") and "," in bairro:
                 bairro, cidade = (p.strip() for p in bairro.rsplit(",", 1))
             # o seletor de bairro costuma vir "Bairro, Cidade-SP" -> separa
