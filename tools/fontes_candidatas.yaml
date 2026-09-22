@@ -1,222 +1,194 @@
 # Candidatas pesquisadas em 22/09/2026 para Morumbi, Barueri/Alphaville/Tamboré,
 # Santana de Parnaíba e Granja Viana (Cotia). Rodar tools/sondar_fontes.py.
-- nome: Best Ville - Barueri
-  cidade: Barueri
-  base_url: https://www.bestville.com.br
-  listagem_url: https://www.bestville.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Best Ville - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.bestville.com.br
-  listagem_url: https://www.bestville.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Houseville - Barueri
-  cidade: Barueri
-  base_url: https://www.houseville.com.br
-  listagem_url: https://www.houseville.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Houseville - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.houseville.com.br
-  listagem_url: https://www.houseville.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: UP Alphaville - Barueri
-  cidade: Barueri
-  base_url: https://www.upalphaville.com
-  listagem_url: https://www.upalphaville.com/imoveis/a-venda/barueri?pagina={page}
-- nome: UP Alphaville - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.upalphaville.com
-  listagem_url: https://www.upalphaville.com/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Next Alphaville - Barueri
-  cidade: Barueri
-  base_url: https://www.nextalphaville.com
-  listagem_url: https://www.nextalphaville.com/imoveis/a-venda/barueri?pagina={page}
-- nome: Next Alphaville - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.nextalphaville.com
-  listagem_url: https://www.nextalphaville.com/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Rodrigo Souza - Barueri
-  cidade: Barueri
-  base_url: https://www.rodrigosouzaimobiliaria.com.br
-  listagem_url: https://www.rodrigosouzaimobiliaria.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Rodrigo Souza - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.rodrigosouzaimobiliaria.com.br
-  listagem_url: https://www.rodrigosouzaimobiliaria.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Santa Cruz Imóvel - Barueri
-  cidade: Barueri
-  base_url: https://www.santacruzimovel.com.br
-  listagem_url: https://www.santacruzimovel.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Santa Cruz Imóvel - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.santacruzimovel.com.br
-  listagem_url: https://www.santacruzimovel.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Sannini Imóveis - Barueri
-  cidade: Barueri
-  base_url: https://www.sanniniimoveis.com.br
-  listagem_url: https://www.sanniniimoveis.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Sannini Imóveis - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.sanniniimoveis.com.br
-  listagem_url: https://www.sanniniimoveis.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Vivenda Imóveis - Barueri
-  cidade: Barueri
-  base_url: https://www.vivendaimoveis.com.br
-  listagem_url: https://www.vivendaimoveis.com.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Vivenda Imóveis - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.vivendaimoveis.com.br
-  listagem_url: https://www.vivendaimoveis.com.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: Neto Imóveis - Barueri
-  cidade: Barueri
-  base_url: https://www.netoimoveis.imb.br
-  listagem_url: https://www.netoimoveis.imb.br/imoveis/a-venda/barueri?pagina={page}
-- nome: Neto Imóveis - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.netoimoveis.imb.br
-  listagem_url: https://www.netoimoveis.imb.br/imoveis/a-venda/santana-de-parnaiba?pagina={page}
-- nome: G3I - Cotia
-  cidade: Cotia
-  base_url: https://www.g3i.com.br
-  listagem_url: https://www.g3i.com.br/imoveis/a-venda/cotia?pagina={page}
-- nome: Target Imobiliária - Cotia
-  cidade: Cotia
-  base_url: https://www.targetimobiliaria.com.br
-  listagem_url: https://www.targetimobiliaria.com.br/imoveis/a-venda/cotia?pagina={page}
-- nome: Proinvest - Cotia
-  cidade: Cotia
-  base_url: https://www.proinvest.com.br
-  listagem_url: https://www.proinvest.com.br/imoveis/a-venda/cotia?pagina={page}
-- nome: Imóveis Panamby - São Paulo
-  cidade: São Paulo
-  base_url: https://www.imoveispanamby.com.br
-  listagem_url: https://www.imoveispanamby.com.br/imoveis/a-venda/sao-paulo?pagina={page}
-- nome: Chavee - Barueri
-  cidade: Barueri
-  base_url: https://chavee.com.br
-  listagem_url: https://chavee.com.br/venda/barueri-sp?pagina={page}
-- nome: Chavee - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://chavee.com.br
-  listagem_url: https://chavee.com.br/venda/santana-de-parnaiba-sp?pagina={page}
-- nome: Chavee - Cotia
-  cidade: Cotia
-  base_url: https://chavee.com.br
-  listagem_url: https://chavee.com.br/venda/cotia-sp?pagina={page}
-- nome: Viver Morumbi - São Paulo
-  cidade: São Paulo
-  base_url: https://www.imobiliariavivermorumbi.com.br
-  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/
-- nome: Lopes Maber - Morumbi
-  cidade: São Paulo
-  base_url: https://www.maber.com.br
-  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
-- nome: Plus Imóveis - Morumbi
-  cidade: São Paulo
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi
-- nome: Leardi - Barueri
-  cidade: Barueri
-  base_url: https://www.leardi.com.br
-  listagem_url: https://www.leardi.com.br/venda/sp/barueri/
-- nome: Leardi - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.leardi.com.br
-  listagem_url: https://www.leardi.com.br/venda/sp/santana-de-parnaiba/
-- nome: Leardi - Morumbi
-  cidade: São Paulo
-  base_url: https://www.leardi.com.br
-  listagem_url: https://www.leardi.com.br/venda/sp/sao-paulo/morumbi/
-- nome: Leardi - Cotia
-  cidade: Cotia
-  base_url: https://www.leardi.com.br
-  listagem_url: https://www.leardi.com.br/venda/sp/cotia/
-- nome: Imobiliária Nunes - Barueri
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
-- nome: Adimari Imóveis - Santana de Parnaíba
-  cidade: Santana de Parnaíba
-  base_url: https://www.adimariimoveis.com
-  listagem_url: https://www.adimariimoveis.com/imoveis/santana-de-parnaiba
-- nome: Villas do Morumbi
-  cidade: São Paulo
-  base_url: https://www.villasdomorumbi.com.br
-  listagem_url: https://www.villasdomorumbi.com.br/imoveis
-- nome: Espaço de Imóveis - Morumbi
-  cidade: São Paulo
-  base_url: https://www.espacodeimoveis.com.br
-  listagem_url: https://www.espacodeimoveis.com.br/comprar/
-- nome: Morumbi Mix (home)
-  cidade: São Paulo
-  base_url: https://www.morumbimix.com.br
-  listagem_url: https://www.morumbimix.com.br/
-- nome: Achei Morumbi (home)
-  cidade: São Paulo
-  base_url: https://acheimorumbi.com.br
-  listagem_url: https://acheimorumbi.com.br/
-- nome: Jardim Sul Imóveis (home)
-  cidade: São Paulo
-  base_url: https://jsi.com.br
-  listagem_url: https://jsi.com.br/
-- nome: Panamby Consultoria (home)
-  cidade: São Paulo
-  base_url: https://www.panambyconsultoria.com.br
-  listagem_url: https://www.panambyconsultoria.com.br/
-- nome: 3 Deltas (home)
-  cidade: São Paulo
-  base_url: https://www.3deltasgestaoimobiliaria.com.br
-  listagem_url: https://www.3deltasgestaoimobiliaria.com.br/
-- nome: Guedala Imóveis (home)
-  cidade: São Paulo
-  base_url: https://www.guedalaimoveis.com.br
-  listagem_url: https://www.guedalaimoveis.com.br/
-- nome: Tamboré Imóveis (home)
-  cidade: Barueri
-  base_url: https://www.tamboreimoveis.com.br
-  listagem_url: https://www.tamboreimoveis.com.br/
-- nome: Morando em Alphaville (home)
-  cidade: Barueri
-  base_url: https://www.morandoemalphaville.com
-  listagem_url: https://www.morandoemalphaville.com/
-- nome: Malena Imóveis (home)
-  cidade: Barueri
-  base_url: https://www.malenaimoveis.com.br
-  listagem_url: https://www.malenaimoveis.com.br/
-- nome: Betta Imóveis (home)
-  cidade: Barueri
-  base_url: https://bettaimoveisalphaville.com.br
-  listagem_url: https://bettaimoveisalphaville.com.br/
-- nome: Felt Imóveis (home)
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/
-- nome: J Morais (home)
-  cidade: Barueri
-  base_url: https://www.jmoraisimoveis.com.br
-  listagem_url: https://www.jmoraisimoveis.com.br/
-- nome: Melhores Imóveis (home)
-  cidade: Barueri
-  base_url: https://melhoresimoveis.com.br
-  listagem_url: https://melhoresimoveis.com.br/
-- nome: Casas Alphaville (home)
-  cidade: Barueri
-  base_url: https://www.casasalphaville.com.br
-  listagem_url: https://www.casasalphaville.com.br/
-- nome: Imobiliárias Alphaville (home)
-  cidade: Barueri
-  base_url: https://imobiliariasalphaville.com.br
-  listagem_url: https://imobiliariasalphaville.com.br/
-- nome: Barueri Imóveis (home)
-  cidade: Barueri
-  base_url: https://barueriimoveis-sp.com.br
-  listagem_url: https://barueriimoveis-sp.com.br/
-- nome: Na Granja Imóveis (home)
+- nome: Na Granja - Cotia
   cidade: Cotia
   base_url: https://nagranjaimoveis.com.br
-  listagem_url: https://nagranjaimoveis.com.br/
-- nome: Unic Imóveis (home)
+  listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda/cotia-sp?pagina={page}
+- nome: Na Granja - Todas
+  cidade: Cotia
+  base_url: https://nagranjaimoveis.com.br
+  listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda?pagina={page}
+- nome: Unic - listagem venda
+  cidade: Cotia
+  base_url: https://www.unicimoveis.com.br
+  listagem_url: https://www.unicimoveis.com.br/imoveis/venda
+  detalhar: true
+- nome: Unic - home
   cidade: Cotia
   base_url: https://www.unicimoveis.com.br
   listagem_url: https://www.unicimoveis.com.br/
-- nome: Terra Granja Viana (home)
-  cidade: Cotia
-  base_url: https://www.terragranjaviana.com.br
-  listagem_url: https://www.terragranjaviana.com.br/
+  detalhar: true
+- nome: Achei Morumbi - home
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/
+  seletores: &id001
+    card: a.property-card
+    link: a
+    titulo: .property-card-type
+    bairro: .property-card-location
+    area: .property-card-spec
+  detalhar: true
+- nome: Achei Morumbi - imoveis
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis
+  seletores: *id001
+  detalhar: true
+- nome: Achei Morumbi - venda
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis?finalidade=venda&pagina={page}
+  seletores: *id001
+  detalhar: true
+- nome: Felt - home
+  cidade: Barueri
+  base_url: https://www.feltimoveis.com.br
+  listagem_url: https://www.feltimoveis.com.br/
+  seletores: &id002
+    card: a[href*='imovel/']:has(h3)
+    link: a
+    titulo: h3
+    bairro: .h6
+    area: div[title='Área'] span
+  detalhar: true
+- nome: Felt - imoveis venda
+  cidade: Barueri
+  base_url: https://www.feltimoveis.com.br
+  listagem_url: https://www.feltimoveis.com.br/imoveis/venda
+  seletores: *id002
+  detalhar: true
+- nome: Felt - busca
+  cidade: Barueri
+  base_url: https://www.feltimoveis.com.br
+  listagem_url: https://www.feltimoveis.com.br/busca?finalidade=venda
+  seletores: *id002
+  detalhar: true
+- nome: Nunes - Barueri
+  cidade: Barueri
+  base_url: https://www.imobiliarianunes.com.br
+  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
+  seletores: &id003
+    card: div.muda_card2
+    link: a.carousel-cell
+  detalhar: true
+- nome: Nunes - Barueri p2
+  cidade: Barueri
+  base_url: https://www.imobiliarianunes.com.br
+  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri?pagina=2
+  seletores: *id003
+  detalhar: true
+- nome: Nunes - Santana de Parnaíba
+  cidade: Santana de Parnaíba
+  base_url: https://www.imobiliarianunes.com.br
+  listagem_url: https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba
+  seletores: *id003
+  detalhar: true
+- nome: Plus - Morumbi
+  cidade: São Paulo
+  base_url: https://www.plusimoveis.com.br
+  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi
+  seletores: &id004
+    card: a:has(.box-one-infos)
+    link: a
+    titulo: .tipo-bairro h4
+    bairro: .tipo-bairro h3
+  detalhar: true
+- nome: Plus - São Paulo
+  cidade: São Paulo
+  base_url: https://www.plusimoveis.com.br
+  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/
+  seletores: *id004
+  detalhar: true
+- nome: Viver Morumbi - SP
+  cidade: São Paulo
+  base_url: https://www.imobiliariavivermorumbi.com.br
+  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/
+  seletores: *id004
+  detalhar: true
+- nome: Viver Morumbi - Morumbi
+  cidade: São Paulo
+  base_url: https://www.imobiliariavivermorumbi.com.br
+  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+  seletores: *id004
+  detalhar: true
+- nome: Guedala - SP
+  cidade: São Paulo
+  base_url: https://www.guedalaimoveis.com.br
+  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/
+  seletores: *id004
+  detalhar: true
+- nome: Maber - Morumbi
+  cidade: São Paulo
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+  seletores: *id004
+  detalhar: true
+- nome: J Morais - home
+  cidade: Barueri
+  base_url: https://www.jmoraisimoveis.com.br
+  listagem_url: https://www.jmoraisimoveis.com.br/
+  detalhar: true
+- nome: Imobiliárias Alphaville - home
+  cidade: Barueri
+  base_url: https://imobiliariasalphaville.com.br
+  listagem_url: https://imobiliariasalphaville.com.br/
+  detalhar: true
+- nome: Morando em Alphaville - home
+  cidade: Barueri
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/
+  seletores: &id005
+    card: a.destaquecard
+    link: a
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+  detalhar: true
+- nome: Morando em Alphaville - venda
+  cidade: Barueri
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/imoveis/venda
+  seletores: *id005
+  detalhar: true
+- nome: Barueri Imóveis - buscar
+  cidade: Barueri
+  base_url: https://barueriimoveis-sp.com.br
+  listagem_url: https://barueriimoveis-sp.com.br/buscar/comprar/todos/todas-cidades/todos-bairros?page={page}
+  seletores:
+    card: div.property-item
+    link: a
+    titulo: h2
+  detalhar: true
+- nome: Barueri Imóveis - home
+  cidade: Barueri
+  base_url: https://barueriimoveis-sp.com.br
+  listagem_url: https://barueriimoveis-sp.com.br/
+  seletores:
+    card: article.box-featured
+    link: a
+    bairro: h3 span
+  detalhar: true
+- nome: Melhores Imóveis - home
+  cidade: Barueri
+  base_url: https://melhoresimoveis.com.br
+  listagem_url: https://melhoresimoveis.com.br/
+  detalhar: true
+- nome: Betta - home
+  cidade: Barueri
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/
+  seletores:
+    card: div.property-info
+    link: a
+  detalhar: true
+- nome: Panamby Consultoria - home
+  cidade: São Paulo
+  base_url: https://www.panambyconsultoria.com.br
+  listagem_url: https://www.panambyconsultoria.com.br/
+  detalhar: true
+- nome: JSI - busca venda
+  cidade: São Paulo
+  base_url: https://jsi.com.br
+  listagem_url: https://jsi.com.br/busca/v1/venda
+  detalhar: true

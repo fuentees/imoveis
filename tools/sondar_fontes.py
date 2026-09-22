@@ -66,15 +66,19 @@ def impressao_digital(html):
             if node.name == "a" and node.get("href") or node.select_one("a[href]"):
                 chave = _classe(node)
                 contagem[chave] += 1
-                exemplo.setdefault(chave, str(node)[:1200])
+                exemplo.setdefault(chave, str(node)[:2500])
                 break
             node = node.parent
     paginacao = sorted({a["href"] for a in soup.select("a[href]")
                         if any(t in a["href"].lower() for t in ("pagina", "page", "pag/"))})[:6]
+    links = collections.Counter(
+        a["href"] for a in soup.select("a[href]")
+        if any(t in a["href"].lower() for t in ("venda", "comprar", "/imoveis", "busca"))
+        and "/imovel/" not in a["href"].lower())
     titulo = soup.title.get_text(strip=True) if soup.title else ""
     return {"titulo": titulo, "blocos": contagem.most_common(5),
             "exemplo": exemplo.get(contagem.most_common(1)[0][0]) if contagem else "",
-            "paginacao": paginacao}
+            "paginacao": paginacao, "links_venda": [h for h, _ in links.most_common(8)]}
 
 
 def sondar(candidato, config, sess):
@@ -114,6 +118,8 @@ def sondar(candidato, config, sess):
     if melhor:
         melhor.pop("placar")
         res.update(status="ok", **melhor)
+        if candidato.get("detalhar"):
+            res.update(impressao_digital(resposta.text))
     else:
         res.update(status="sem_seletor", **impressao_digital(resposta.text))
     return res
