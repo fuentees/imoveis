@@ -9,6 +9,7 @@ limite de páginas e checagem de robots.txt. Ajuste no config.
 """
 import re
 import time
+from collections import Counter
 import urllib.robotparser
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
@@ -331,8 +332,36 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
     return achados
 
 
-def raspar_todos(config, max_paginas=None, relatorio=None):
-    """Percorre todas as imobiliárias ativas do config."""
+_CODIGOS_BLOQUEIO = ("403", "405", "429")
+
+
+def _rotacionar_plataformas(sites, rodada):
+    """
+    Gira a ordem dos sites de cada plataforma a cada ciclo. Se a plataforma
+    bloquear no meio do caminho, quem fica sem coleta muda de um ciclo para o
+    outro, em vez de serem sempre os últimos da lista.
+    """
+    grupos = {}
+    for s in sites:
+        if s.get("plataforma"):
+            grupos.setdefault(s["plataforma"], []).append(s)
+    filas = {}
+    for plat, membros in grupos.items():
+        k = rodada % len(membros)
+        filas[plat] = membros[k:] + membros[:k]
+    return [filas[s["plataforma"]].pop(0) if s.get("plataforma") else s for s in sites]
+
+
+def raspar_todos(config, max_paginas=None, relatorio=None, rodada=None):
+    """
+    Percorre todas as imobiliárias ativas do config.
+
+    Sites com a mesma `plataforma` (ex.: praedium) dividem a cota de
+    `scraper.paginas_por_plataforma`: vários sites da mesma empresa de
+    hospedagem somam requisições no mesmo firewall, que bloqueia (405) quando
+    passam do limite. Após um bloqueio, o restante da plataforma fica para o
+    próximo ciclo em vez de insistir.
+    """
     _ROBOTS_CACHE.clear()  # regras podem mudar entre ciclos do modo loop
     todos = []
     scfg = config.get("scraper", {})
@@ -348,15 +377,34 @@ def raspar_todos(config, max_paginas=None, relatorio=None):
         relatorio["fontes"] = []
     nomes_cidades = {normalizar_texto(c): c for c in config.get("cidades_monitoradas", [])}
     permitidas = set(nomes_cidades)
+    cotas = dict(scfg.get("paginas_por_plataforma") or {})
+    ativos = [s for s in config.get("sites", []) if s.get("ativo", True)]
+    rodada = int(time.time() // 3600) if rodada is None else rodada
+    ativos = _rotacionar_plataformas(ativos, rodada)
+    restantes = Counter(s.get("plataforma") for s in ativos if s.get("plataforma"))
+    bloqueadas = set()
     sess = requests.Session()
-    for site in config.get("sites", []):
-        if not site.get("ativo", True):
+    for site in ativos:
+        plat = site.get("plataforma")
+        diag = {"nome": site["nome"], "url": site["listagem_url"], "anuncios": 0}
+        if plat:
+            restantes[plat] -= 1
+        if plat in bloqueadas:
+            diag.update(status="adiado_bloqueio", paginas=0,
+                        erros=[f"plataforma {plat} bloqueou neste ciclo"])
+            _log.info("> Pulando %s: plataforma %s bloqueou neste ciclo.", site["nome"], plat)
+            if relatorio is not None:
+                relatorio["fontes"].append(diag)
             continue
+        limite_site = max_paginas
+        if plat in cotas:
+            # divide o que sobrou da cota entre este e os próximos da plataforma
+            parte = max(1, cotas[plat] // (restantes[plat] + 1))
+            limite_site = min(limite_site or parte, parte)
         _log.info("> Raspando: %s", site["nome"])
         inicio = time.monotonic()
-        diag = {"nome": site["nome"], "url": site["listagem_url"], "anuncios": 0}
         try:
-            achados = raspar_site(site, delay=delay, max_paginas=max_paginas,
+            achados = raspar_site(site, delay=delay, max_paginas=limite_site,
                                  session=sess, verify_ssl=verify_ssl,
                                  delay_detalhe=delay_detalhe,
                                  respeitar_robots=respeitar_robots, diagnostico=diag)
@@ -372,6 +420,12 @@ def raspar_todos(config, max_paginas=None, relatorio=None):
         except Exception as e:
             diag.update(status="erro", erros=[str(e)])
             _log.warning("  [!] falha geral em %s: %s", site["nome"], e)
+        if plat in cotas:
+            cotas[plat] = max(0, cotas[plat] - diag.get("paginas", 0))
+        if plat and diag.get("status") == "erro_http" and any(
+                c in e for e in diag.get("erros", []) for c in _CODIGOS_BLOQUEIO):
+            bloqueadas.add(plat)
+            _log.warning("  [!] plataforma %s bloqueou; demais sites dela ficam para o próximo ciclo.", plat)
         diag["segundos"] = round(time.monotonic() - inicio, 1)
         if relatorio is not None:
             relatorio["fontes"].append(diag)

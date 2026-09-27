@@ -9,6 +9,10 @@ on:
         description: "Pula a busca no OpenStreetMap e só sonda tools/fontes_candidatas.yaml"
         type: boolean
         default: false
+      ciclo_teste:
+        description: "Roda um ciclo completo em dry-run (sem Telegram, banco vazio) para conferir a coleta"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -16,7 +20,7 @@ permissions:
 jobs:
   descobrir:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,6 +34,12 @@ jobs:
       - name: Sonda páginas candidatas (tools/fontes_candidatas.yaml)
         if: always()
         run: python tools/sondar_fontes.py
+      - name: Ciclo de teste em dry-run (não envia nem altera a branch data)
+        if: ${{ inputs.ciclo_teste }}
+        run: |
+          cp config.example.yaml config.yaml
+          python main.py --once --dry-run --relatorio relatorio.json --log-file bot.log || true
+          python tools/resumo_ciclo.py >> "$GITHUB_STEP_SUMMARY"
       - name: Publica resumo
         if: always()
         run: cat fontes-descobertas.md fontes-sondadas.md >> "$GITHUB_STEP_SUMMARY" || true
@@ -43,5 +53,7 @@ jobs:
             fontes-descobertas.md
             fontes-sondadas.json
             fontes-sondadas.md
+            relatorio.json
+            bot.log
           retention-days: 30
           if-no-files-found: warn

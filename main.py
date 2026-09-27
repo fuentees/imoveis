@@ -10,6 +10,7 @@ Uso:
 Credenciais do Telegram: via config.yaml OU variáveis de ambiente
     TELEGRAM_TOKEN / TELEGRAM_CHAT_ID  (ambiente tem prioridade).
 """
+import html
 import os
 import sys
 import time
@@ -78,8 +79,10 @@ def validar_config(config):
                     "max_alertas_por_ciclo": (1, None),
                     "max_alertas_por_dominio": (1, None),
                     "max_alertas_por_cidade": (1, None),
+                    "max_alertas_por_dominio_dia": (1, None),
                     "preco_min": (0, None), "preco_m2_min": (0, None), "preco_m2_max": (0, None)},
-        "scraper": {"delay_segundos": (0, None), "delay_detalhe_segundos": (0, None)},
+        "scraper": {"delay_segundos": (0, None), "delay_detalhe_segundos": (0, None),
+                    "avisar_fonte_apos_falhas": (1, None)},
         "agendamento": {"intervalo_minutos": (0.01, None)},
     }
     for section, fields in ranges.items():
@@ -90,6 +93,9 @@ def validar_config(config):
             if (type(value) not in (int, float) or not math.isfinite(value)
                     or value < low or (high is not None and value >= high)):
                 raise ValueError(f"Valor inválido: {section}.{key}")
+    cotas = config.get("scraper", {}).get("paginas_por_plataforma", {})
+    if not isinstance(cotas, dict) or any(type(v) is not int or v < 1 for v in cotas.values()):
+        raise ValueError("scraper.paginas_por_plataforma deve mapear plataforma -> páginas (inteiro positivo).")
     for key in ("exigir_keyword", "permitir_keyword_sem_desconto"):
         if key in config.get("analise", {}) and type(config["analise"][key]) is not bool:
             raise ValueError(f"Valor inválido: analise.{key}")
@@ -108,15 +114,27 @@ def _deve_realertar(im, preco_anterior, queda_min):
     return im.preco <= preco_anterior * (1 - queda_min)
 
 
-def _selecionar_diverso(pendentes, limite, max_dominio=2, max_cidade=3):
-    """Escolhe os maiores scores sem deixar um portal ou cidade dominar o ciclo."""
+def _dominio(url):
+    return urlsplit(url).netloc.lower().removeprefix("www.")
+
+
+def _selecionar_diverso(pendentes, limite, max_dominio=2, max_cidade=3,
+                        max_dominio_dia=None, enviados_24h=None):
+    """
+    Escolhe os maiores scores sem deixar um portal ou cidade dominar o ciclo.
+    `max_dominio_dia` limita também a soma com o que o portal já recebeu nas
+    últimas 24h (`enviados_24h`): um portal grande não ocupa todos os ciclos.
+    """
     escolhidos = []
     por_dominio = Counter()
     por_cidade = Counter()
+    enviados_24h = enviados_24h or Counter()
     for im in pendentes:
-        dominio = urlsplit(im.url).netloc.lower().removeprefix("www.") or im.fonte
+        dominio = _dominio(im.url) or im.fonte
         cidade = (im.cidade or "").casefold()
         if por_dominio[dominio] >= max_dominio or por_cidade[cidade] >= max_cidade:
+            continue
+        if max_dominio_dia and enviados_24h[dominio] + por_dominio[dominio] >= max_dominio_dia:
             continue
         escolhidos.append(im)
         por_dominio[dominio] += 1
@@ -124,6 +142,37 @@ def _selecionar_diverso(pendentes, limite, max_dominio=2, max_cidade=3):
         if len(escolhidos) == limite:
             return escolhidos
     return escolhidos
+
+
+def _status_fonte(diag):
+    erros = "; ".join(diag.get("erros", []))
+    return f"{diag.get('status', '?')}: {erros}"[:160] if erros else diag.get("status", "?")
+
+
+def verificar_saude_fontes(fontes, storage, tg, minimo_falhas, relatorio=None):
+    """
+    Conta ciclos seguidos sem nenhum anúncio por fonte e avisa no Telegram
+    uma única vez quando passa de `minimo_falhas` (e de novo quando voltar).
+    Sem isso, uma fonte bloqueada fica dias parada com o workflow "verde".
+    """
+    voltaram = [f["nome"] for f in fontes
+                if storage.registrar_saude(f["nome"], f.get("anuncios", 0) > 0, _status_fonte(f))]
+    paradas = storage.fontes_para_avisar(minimo_falhas)
+    if relatorio is not None:
+        relatorio["fontes_paradas"] = [nome for nome, *_ in paradas]
+    if not (paradas or voltaram) or tg is None:
+        return
+    linhas = []
+    if paradas:
+        linhas.append(f"⚠️ <b>Fontes sem dados há {minimo_falhas}+ ciclos seguidos</b>")
+        for nome, falhas, ultimo_ok, status in paradas:
+            quando = datetime.fromtimestamp(ultimo_ok).strftime("%d/%m %H:%M") if ultimo_ok else "nunca"
+            linhas.append(f"• {html.escape(nome)} ({falhas} ciclos; último dado: {quando})\n"
+                          f"  <i>{html.escape(status or '')}</i>")
+    if voltaram:
+        linhas.append("✅ <b>Voltaram a coletar:</b> " + html.escape(", ".join(voltaram)))
+    if tg.enviar("\n".join(linhas)):
+        storage.marcar_avisadas([nome for nome, *_ in paradas])
 
 
 def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=None):
@@ -135,6 +184,10 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
     relatorio["anuncios"] = len(imoveis)
     relatorio["por_cidade"] = dict(Counter(im.cidade for im in imoveis))
     _log.info("Total raspado: %s anúncios", len(imoveis))
+    if not dry_run:
+        verificar_saude_fontes(relatorio.get("fontes", []), storage, tg,
+                               config.get("scraper", {}).get("avisar_fonte_apos_falhas", 6),
+                               relatorio)
 
     a = config.get("analise", {})
     historico = comps_do_historico(
@@ -173,10 +226,13 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         pendentes.append(im)
 
     novos = len(pendentes)
+    enviados_24h = Counter(_dominio(u) for u in storage.urls_alertadas_desde(time.time() - 86400))
     fila = pendentes if dry_run else _selecionar_diverso(
         pendentes, limite_alertas,
         max_dominio=a.get("max_alertas_por_dominio", 2),
-        max_cidade=a.get("max_alertas_por_cidade", 3))
+        max_cidade=a.get("max_alertas_por_cidade", 3),
+        max_dominio_dia=a.get("max_alertas_por_dominio_dia"),
+        enviados_24h=enviados_24h)
     adiados = 0 if dry_run else max(0, novos - len(fila))
     enviados = falhas = 0
     enviados_lista = []

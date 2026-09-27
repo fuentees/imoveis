@@ -50,6 +50,9 @@ As oito últimas linhas foram adicionadas em 22/09/2026 (Morumbi, Alphaville/Bar
 
 ## Limites da cobertura
 
+- **Plataforma Praedium (20 fontes):** o firewall compartilhado passou a responder 405 depois de ~77 páginas seguidas, e de 11/09 a 22/09 as 10 últimas fontes da lista (Caraguatatuba, Ilhabela, Bertioga, Imobi Santista...) ficaram sem dados. Agora elas dividem `scraper.paginas_por_plataforma.praedium` (60 páginas por ciclo; a sobra de quem tem poucas páginas passa para as próximas). A ordem gira a cada ciclo, e no primeiro bloqueio o restante da plataforma fica como `adiado_bloqueio` até o ciclo seguinte.
+- **Fonte parada:** depois de `scraper.avisar_fonte_apos_falhas` ciclos seguidos (padrão 6) sem nenhum anúncio de uma fonte, o bot manda um aviso no Telegram com o último erro, uma única vez, e avisa de novo quando ela voltar.
+- **Portal dominante:** `analise.max_alertas_por_dominio_dia` (padrão 4) limita os alertas de um mesmo site em 24h; o excedente fica para os dias seguintes. Antes disso, 112 de 159 alertas vieram do Chavee.
 - A coleta para no fim dos resultados ou no limite de páginas. O relatório sinaliza `limite_paginas`; o limite é configurável por fonte.
 - Edson usa os destaques da página inicial. Ubatuba.com expõe uma página de resultados no HTML; sua paginação interativa ainda não está integrada. Não representam o estoque completo.
 - A Paulumar continua lendo detalhes para conferir a área útil. Nas fontes Praedium, preço, área e descrição vêm dos campos da própria listagem, reduzindo requisições e erros de bloqueio.

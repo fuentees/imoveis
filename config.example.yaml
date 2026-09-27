@@ -9,6 +9,11 @@ scraper:
   delay_detalhe_segundos: 3
   verificar_ssl: true
   respeitar_robots: true
+  # Sites da mesma plataforma dividem esta cota por ciclo (o firewall da
+  # Praedium passou a responder 405 depois de ~77 páginas seguidas).
+  paginas_por_plataforma:
+    praedium: 60
+  avisar_fonte_apos_falhas: 6
   validar_detalhe_candidatos: true
   exigir_detalhe_candidato: true
 analise:
@@ -23,12 +28,14 @@ analise:
   realerta_queda: 0.1
   max_alertas_por_ciclo: 10
   max_alertas_por_dominio: 2
+  max_alertas_por_dominio_dia: 4
   max_alertas_por_cidade: 3
 agendamento:
   intervalo_minutos: 180
 sites:
 - nome: Angelo Imoveis - Peruibe
   ativo: true
+  plataforma: praedium
   base_url: https://angeloimoveisperuibe.com.br
   listagem_url: https://angeloimoveisperuibe.com.br/imoveis/a-venda/peruibe-sp?pagina={page}
   cidade: Peruibe
@@ -147,6 +154,7 @@ sites:
     bairro: ''
 - nome: Susana Amorim - Guarujá
   ativo: true
+  plataforma: praedium
   base_url: https://susanaamorimimoveis.com.br
   listagem_url: https://susanaamorimimoveis.com.br/imoveis/a-venda/guaruja-sp?pagina={page}
   cidade: Guaruja
@@ -236,6 +244,7 @@ sites:
     bairro: h4.localizacao span
 - nome: DJB Consultoria - São Paulo
   ativo: true
+  plataforma: praedium
   base_url: https://www.djbconsultoriaimobiliaria.com.br
   listagem_url: https://www.djbconsultoriaimobiliaria.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
   cidade: São Paulo
@@ -255,6 +264,7 @@ sites:
     bairro: .property_card_address
 - nome: JR Imóveis - São Paulo
   ativo: true
+  plataforma: praedium
   base_url: https://www.imobjr.com.br
   listagem_url: https://www.imobjr.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
   cidade: São Paulo
@@ -274,6 +284,7 @@ sites:
     bairro: .property_card_address
 - nome: Sanchez Imobiliária - São Paulo
   ativo: true
+  plataforma: praedium
   base_url: https://sanchezimobiliaria.com.br
   listagem_url: https://sanchezimobiliaria.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
   cidade: São Paulo
@@ -293,6 +304,7 @@ sites:
     bairro: .property_card_address
 - nome: Homespot - São Paulo
   ativo: true
+  plataforma: praedium
   base_url: https://www.homespotimoveis.com.br
   listagem_url: https://www.homespotimoveis.com.br/imoveis/a-venda/sao-paulo-sp?pagina={page}
   cidade: São Paulo
@@ -312,6 +324,7 @@ sites:
     bairro: .property_card_address
 - nome: SKL Imóveis - Itanhaém
   ativo: true
+  plataforma: praedium
   base_url: https://skl.imb.br
   listagem_url: https://skl.imb.br/imoveis/a-venda/itanhaem-sp?pagina={page}
   cidade: Itanhaém
@@ -331,6 +344,7 @@ sites:
     bairro: .property_card_address
 - nome: William Buongiovanni - Mongaguá
   ativo: true
+  plataforma: praedium
   base_url: https://williambuongiovanni.com.br
   listagem_url: https://williambuongiovanni.com.br/imoveis/a-venda/mongagua-sp?pagina={page}
   cidade: Mongaguá
@@ -350,6 +364,7 @@ sites:
     bairro: .property_card_address
 - nome: Imigrantes Imóveis - Praia Grande
   ativo: true
+  plataforma: praedium
   base_url: https://imigrantesimoveis.com.br
   listagem_url: https://imigrantesimoveis.com.br/imoveis/a-venda/praia-grande-sp?pagina={page}
   cidade: Praia Grande
@@ -369,6 +384,7 @@ sites:
     bairro: .property_card_address
 - nome: Imobi Santista - Santos
   ativo: true
+  plataforma: praedium
   base_url: https://www.imobisantista.com.br
   listagem_url: https://www.imobisantista.com.br/imoveis/a-venda/santos-sp?pagina={page}
   cidade: Santos
@@ -388,6 +404,7 @@ sites:
     bairro: .property_card_address
 - nome: Imobi Santista - São Vicente
   ativo: true
+  plataforma: praedium
   base_url: https://www.imobisantista.com.br
   listagem_url: https://www.imobisantista.com.br/imoveis/a-venda/sao-vicente-sp?pagina={page}
   cidade: São Vicente
@@ -407,6 +424,7 @@ sites:
     bairro: .property_card_address
 - nome: Beatriz Corretora - Peruíbe
   ativo: true
+  plataforma: praedium
   base_url: https://beatrizcorretora.com.br
   listagem_url: https://beatrizcorretora.com.br/imoveis/a-venda/peruibe-sp?pagina={page}
   cidade: Peruíbe
@@ -426,6 +444,7 @@ sites:
     bairro: .property_card_address
 - nome: D&F Riviera - Bertioga
   ativo: true
+  plataforma: praedium
   base_url: https://www.defriviera.com.br
   listagem_url: https://www.defriviera.com.br/imoveis/a-venda/bertioga-sp?pagina={page}
   cidade: Bertioga
@@ -445,6 +464,7 @@ sites:
     bairro: .property_card_address
 - nome: Imperial Imóveis - Caraguatatuba
   ativo: true
+  plataforma: praedium
   base_url: https://imperialimoveiscaragua.com.br
   listagem_url: https://imperialimoveiscaragua.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
   cidade: Caraguatatuba
@@ -464,6 +484,7 @@ sites:
     bairro: .property_card_address
 - nome: Imperial Imóveis - Ubatuba
   ativo: true
+  plataforma: praedium
   base_url: https://imperialimoveiscaragua.com.br
   listagem_url: https://imperialimoveiscaragua.com.br/imoveis/a-venda/ubatuba-sp?pagina={page}
   cidade: Ubatuba
@@ -483,6 +504,7 @@ sites:
     bairro: .property_card_address
 - nome: David Imóveis - Caraguatatuba
   ativo: true
+  plataforma: praedium
   base_url: https://www.davidimoveis.com.br
   listagem_url: https://www.davidimoveis.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
   cidade: Caraguatatuba
@@ -502,6 +524,7 @@ sites:
     bairro: .property_card_address
 - nome: Janaína Soares - Caraguatatuba
   ativo: true
+  plataforma: praedium
   base_url: https://www.corretorajanainafsoares.com.br
   listagem_url: https://www.corretorajanainafsoares.com.br/imoveis/a-venda/caraguatatuba-sp?pagina={page}
   cidade: Caraguatatuba
@@ -521,6 +544,7 @@ sites:
     bairro: .property_card_address
 - nome: Borges Boiçucanga - São Sebastião
   ativo: true
+  plataforma: praedium
   base_url: https://borgesimoveisboissucanga.com.br
   listagem_url: https://borgesimoveisboissucanga.com.br/imoveis/a-venda/sao-sebastiao-sp?pagina={page}
   cidade: São Sebastião
@@ -540,6 +564,7 @@ sites:
     bairro: .property_card_address
 - nome: Imobiliária Ilhabela - Ilhabela
   ativo: true
+  plataforma: praedium
   base_url: https://imobiliariailhabela.com.br
   listagem_url: https://imobiliariailhabela.com.br/imoveis/a-venda/ilhabela-sp?pagina={page}
   cidade: Ilhabela
@@ -745,6 +770,7 @@ sites:
       atributo: title
 - nome: Na Granja Imóveis - Cotia
   ativo: true
+  plataforma: praedium
   base_url: https://nagranjaimoveis.com.br
   listagem_url: https://nagranjaimoveis.com.br/imoveis/a-venda/cotia-sp?pagina={page}
   cidade: Cotia
