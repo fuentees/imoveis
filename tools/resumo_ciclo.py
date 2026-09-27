@@ -7,6 +7,8 @@ def formatar(dados):
     linhas = ["## Monitor de imóveis", "",
               f"Início (UTC): {dados.get('inicio', 'não iniciado')}", "",
               f"Anúncios: **{dados.get('anuncios', 0)}** · Oportunidades: **{dados.get('oportunidades', 0)}** · Enviados: **{dados.get('enviados', 0)}** · Falhas de envio: **{dados.get('falhas_envio', 0)}**", ""]
+    if dados.get("fontes_paradas"):
+        linhas += ["**Fontes paradas avisadas neste ciclo:** " + ", ".join(dados["fontes_paradas"]), ""]
     if dados.get("erro"):
         linhas += [f"**Falha:** {dados['erro']}", ""]
     detalhes = dados.get("validacao_detalhes", {})
@@ -23,7 +25,7 @@ def formatar(dados):
     for fonte in dados.get("fontes", []):
         nome = fonte["nome"].replace("|", "/")
         linhas.append(f"| {nome} | {fonte.get('status', 'desconhecido')} | {fonte.get('paginas', 0)} | {fonte.get('anuncios', 0)} | {fonte.get('com_preco_area', 0)} | {fonte.get('precos_parciais', 0)} |")
-    linhas += ["", "`limite_paginas` significa coleta parcial: aumente paginas na configuração para ampliar. Zero alertas novos pode ser normal; consulte os totais de coleta e as falhas acima."]
+    linhas += ["", "`limite_paginas` significa coleta parcial: aumente paginas na configuração para ampliar. `adiado_bloqueio` significa que a plataforma bloqueou neste ciclo e o site entra antes na fila do próximo. Zero alertas novos pode ser normal; consulte os totais de coleta e as falhas acima."]
     return "\n".join(linhas)
 
 

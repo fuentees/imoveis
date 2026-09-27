@@ -4,6 +4,7 @@ Persistência em SQLite. Três papéis:
  - salvar/atualizar imóveis vistos (histórico que engrossa a mediana)
  - controlar o que JÁ foi alertado, pra não repetir no Telegram
  - guardar o preço no momento do alerta, pra re-alertar se cair mais depois
+ - contar ciclos seguidos sem dados de cada fonte, pra avisar quando uma parar
 """
 import sqlite3
 import time
@@ -22,6 +23,13 @@ CREATE TABLE IF NOT EXISTS alertas (
     alertado_em REAL
 );
 CREATE INDEX IF NOT EXISTS ix_imoveis_atualizado ON imoveis (atualizado_em);
+CREATE TABLE IF NOT EXISTS saude_fontes (
+    nome TEXT PRIMARY KEY,
+    falhas_seguidas INTEGER NOT NULL DEFAULT 0,
+    ultimo_ok REAL,
+    ultimo_status TEXT,
+    avisado_em REAL
+);
 """
 
 
@@ -95,6 +103,44 @@ class Storage:
             "VALUES (?,?,?,?)",
             (url, score, preco, time.time()))
         self.con.commit()
+
+    def urls_alertadas_desde(self, instante):
+        return [r[0] for r in self.con.execute(
+            "SELECT url FROM alertas WHERE alertado_em >= ?", (instante,))]
+
+    def registrar_saude(self, nome, ok, status=""):
+        """
+        Atualiza a contagem de ciclos seguidos sem dados da fonte.
+        Retorna True quando a fonte voltou depois de já ter sido avisada.
+        """
+        row = self.con.execute(
+            "SELECT falhas_seguidas, avisado_em FROM saude_fontes WHERE nome=?", (nome,)).fetchone()
+        voltou = bool(ok and row and row[1])
+        if ok:
+            self.con.execute(
+                "INSERT INTO saude_fontes (nome, falhas_seguidas, ultimo_ok, ultimo_status, avisado_em) "
+                "VALUES (?, 0, ?, ?, NULL) ON CONFLICT(nome) DO UPDATE SET falhas_seguidas=0, "
+                "ultimo_ok=excluded.ultimo_ok, ultimo_status=excluded.ultimo_status, avisado_em=NULL",
+                (nome, time.time(), status))
+        else:
+            self.con.execute(
+                "INSERT INTO saude_fontes (nome, falhas_seguidas, ultimo_status) VALUES (?, 1, ?) "
+                "ON CONFLICT(nome) DO UPDATE SET falhas_seguidas=falhas_seguidas+1, "
+                "ultimo_status=excluded.ultimo_status", (nome, status))
+        self.con.commit()
+        return voltou
+
+    def fontes_para_avisar(self, minimo_falhas):
+        """Fontes com `minimo_falhas`+ ciclos seguidos sem dados e ainda não avisadas."""
+        return self.con.execute(
+            "SELECT nome, falhas_seguidas, ultimo_ok, ultimo_status FROM saude_fontes "
+            "WHERE falhas_seguidas >= ? AND avisado_em IS NULL ORDER BY nome",
+            (minimo_falhas,)).fetchall()
+
+    def marcar_avisadas(self, nomes):
+        with self.con:
+            self.con.executemany("UPDATE saude_fontes SET avisado_em=? WHERE nome=?",
+                                 [(time.time(), n) for n in nomes])
 
     def fechar(self):
         self.con.close()

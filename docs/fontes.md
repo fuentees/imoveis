@@ -1,6 +1,6 @@
 # Fontes monitoradas
 
-Verificação de coleta: 10/09/2026 (UTC). 31 entradas ativas; 579 anúncios coletados em uma página por entrada, incluindo as 13 cidades solicitadas. Teste sem envio ao Telegram e com detalhes desativados. Quantidades mudam conforme o estoque das imobiliárias.
+Verificação de coleta: 10/09/2026 (UTC), ampliada em 22/09/2026. 39 entradas ativas; 579 anúncios coletados em uma página por entrada nas 13 cidades originais (10/09) e mais 133 nas 8 fontes novas de Barueri, Santana de Parnaíba, Cotia e Morumbi (22/09). Teste sem envio ao Telegram e com detalhes desativados. Quantidades mudam conforme o estoque das imobiliárias.
 
 A lista reúne fontes que responderam ao teste, não todas as imobiliárias existentes. Não há cadastro público completo nem garantia de acesso a todos os portais. Fontes com bloqueio de robots.txt permanecem fora da coleta.
 
@@ -37,9 +37,22 @@ A lista reúne fontes que responderam ao teste, não todas as imobiliárias exis
 | [Chavee - Santos](https://chavee.com.br/venda/santos-sp) | Santos | 24 | 24 | 20 |
 | [Chavee - São Vicente](https://chavee.com.br/venda/sao-vicente-sp) | São Vicente | 24 | 24 | 20 |
 | [Chavee - Mongaguá](https://chavee.com.br/venda/mongagua-sp) | Mongaguá | 24 | 24 | 20 |
+| [Na Granja Imóveis - Cotia](https://nagranjaimoveis.com.br/imoveis/a-venda/cotia-sp) | Cotia (Granja Viana) | 20 | 20 | 20 |
+| [Unic Imóveis - Granja Viana](https://www.unicimoveis.com.br/buscar/venda) | Cotia (Granja Viana) | 22 | 22 | 1 |
+| [Plus Imóveis - Morumbi](https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/) | São Paulo (Morumbi) | 12 | 11 | 20 |
+| [Viver Morumbi - Morumbi](https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/) | São Paulo (Morumbi) | 10 | 10 | 20 |
+| [Guedala Imóveis - Morumbi](https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/) | São Paulo (Morumbi) | 6 | 4 | 10 |
+| [Felt Imóveis - Alphaville](https://www.feltimoveis.com.br/) | Barueri e Santana de Parnaíba (Alphaville) | 9 | 9 | 1 |
+| [Imobiliária Nunes - Barueri](https://www.imobiliarianunes.com.br/comprar/Barueri) | Barueri (Alphaville, Tamboré) | 27 | 26 | 1 |
+| [Imobiliária Nunes - Santana de Parnaíba](https://www.imobiliarianunes.com.br/comprar/Santana-de-Parnaiba) | Santana de Parnaíba (Alphaville) | 27 | 21 | 1 |
+
+As oito últimas linhas foram adicionadas em 22/09/2026 (Morumbi, Alphaville/Barueri, Santana de Parnaíba e Granja Viana), verificadas com `tools/sondar_fontes.py` no GitHub Actions usando a configuração final, uma página por fonte.
 
 ## Limites da cobertura
 
+- **Plataforma Praedium (20 fontes):** o firewall compartilhado passou a responder 405 depois de ~77 páginas seguidas, e de 11/09 a 22/09 as 10 últimas fontes da lista (Caraguatatuba, Ilhabela, Bertioga, Imobi Santista...) ficaram sem dados. Agora elas dividem `scraper.paginas_por_plataforma.praedium` (60 páginas por ciclo; a sobra de quem tem poucas páginas passa para as próximas). A ordem gira a cada ciclo, e no primeiro bloqueio o restante da plataforma fica como `adiado_bloqueio` até o ciclo seguinte.
+- **Fonte parada:** depois de `scraper.avisar_fonte_apos_falhas` ciclos seguidos (padrão 6) sem nenhum anúncio de uma fonte, o bot manda um aviso no Telegram com o último erro, uma única vez, e avisa de novo quando ela voltar.
+- **Portal dominante:** `analise.max_alertas_por_dominio_dia` (padrão 4) limita os alertas de um mesmo site em 24h; o excedente fica para os dias seguintes. Antes disso, 112 de 159 alertas vieram do Chavee.
 - A coleta para no fim dos resultados ou no limite de páginas. O relatório sinaliza `limite_paginas`; o limite é configurável por fonte.
 - Edson usa os destaques da página inicial. Ubatuba.com expõe uma página de resultados no HTML; sua paginação interativa ainda não está integrada. Não representam o estoque completo.
 - A Paulumar continua lendo detalhes para conferir a área útil. Nas fontes Praedium, preço, área e descrição vêm dos campos da própria listagem, reduzindo requisições e erros de bloqueio.
@@ -58,5 +71,20 @@ A lista reúne fontes que responderam ao teste, não todas as imobiliárias exis
 | [https://www.lcaimoveislitoral.com.br/imoveis/a-venda](https://www.lcaimoveislitoral.com.br/imoveis/a-venda) | Listagem bloqueada pelo robots.txt |
 | [https://www.spre.com.br/imoveis/a-venda/](https://www.spre.com.br/imoveis/a-venda/) | Listagem bloqueada pelo robots.txt |
 | [https://www.rodriguesimoveis.com.br/imoveis/a-venda](https://www.rodriguesimoveis.com.br/imoveis/a-venda) | Listagem bloqueada pelo robots.txt |
+
+Pesquisa de 22/09/2026 (Morumbi, Alphaville, Tamboré, Barueri, Santana de Parnaíba, Granja Viana):
+
+| Fonte | Resultado |
+| --- | --- |
+| Best Ville, Houseville, UP Alphaville, Next Alphaville, Rodrigo Souza, Santa Cruz Imóvel, Sannini, Vivenda, Neto Imóveis, G3I, Target, Proinvest (plataforma Kenlo) | Listagem bloqueada pelo robots.txt |
+| Villas do Morumbi, Morumbi Mix, Tamboré Imóveis, Adimari, Terra Granja Viana | Listagem bloqueada pelo robots.txt |
+| Malena Imóveis | 403 para robôs |
+| Achei Morumbi | Card mostra só R$/m², sem o preço total |
+| Morando em Alphaville | Card sem área na maior parte dos anúncios |
+| Lopes Maber, Betta, J Morais, Melhores Imóveis, Jardim Sul Imóveis, Panamby Consultoria | Anúncios carregados por JavaScript, só destaques ou sem listagem pública estável |
+| Leardi, Imóveis Panamby, Espaço de Imóveis, 3 Deltas | URL de listagem inexistente ou domínio fora do ar |
+| Chavee (Barueri, Santana de Parnaíba, Cotia) | Sem anúncios nessas cidades |
+
+As pendentes que podem virar fonte ficam em `tools/fontes_candidatas.yaml`, sondadas toda semana pelo workflow `descobrir-fontes` (ou manualmente com `somente_sondagem`).
 
 Outros sites pesquisados (Veux, Preservare, Patucci, Canaã, OPA, OHL, HM, Barão, Igor Braga e outros) usam estruturas distintas ou exigem integração e conferência adicionais. Não foram ativados apenas por aparecerem na pesquisa.

@@ -1,0 +1,37 @@
+# Fila de candidatas ainda NÃO ativadas (sondadas em 22/09/2026).
+# O workflow descobrir-fontes roda tools/sondar_fontes.py sobre esta lista;
+# quando uma delas extrair preço e área com consistência, mova o bloco para
+# config.example.yaml. Motivo de cada pendência em docs/fontes.md.
+- nome: Morando em Alphaville
+  cidade: Barueri
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/
+  seletores:
+    card: a.destaquecard
+    link: a
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+- nome: Achei Morumbi
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis
+  seletores:
+    card: a.property-card
+    link: a
+    titulo: .property-card-type
+    bairro: .property-card-location
+    area: .property-card-spec
+- nome: Betta Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar/pag-{page}
+  pular_param_pagina_1: true
+- nome: Lopes Maber - Morumbi
+  cidade: São Paulo
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+- nome: Melhores Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://melhoresimoveis.com.br
+  listagem_url: https://melhoresimoveis.com.br/
