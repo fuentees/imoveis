@@ -31,6 +31,9 @@ analise:
   tipos_alerta:
   - casa
   - sobrado
+  # Bairro com menos de min_amostra comparáveis é comparado com a região
+  # (bloco regioes, no fim do arquivo), exigindo este deságio maior.
+  limiar_desconto_regiao: 0.5
   max_alertas_por_ciclo: 10
   max_alertas_por_dominio: 2
   max_alertas_por_dominio_dia: 4
@@ -813,7 +816,7 @@ sites:
   cidade: São Paulo
   cidades_permitidas:
   - São Paulo
-  paginas: 20
+  paginas: 60
   pular_param_pagina_1: true
   detalhe: false
   seletores:
@@ -829,7 +832,7 @@ sites:
   cidades_permitidas:
   - São Paulo
   bairro_apos: ' - '
-  paginas: 20
+  paginas: 40
   pular_param_pagina_1: true
   detalhe: false
   seletores:
@@ -846,7 +849,7 @@ sites:
   cidades_permitidas:
   - São Paulo
   bairro_apos: ' - '
-  paginas: 10
+  paginas: 15
   pular_param_pagina_1: true
   detalhe: false
   seletores:
@@ -916,3 +919,24 @@ cidades_monitoradas:
 - Barueri
 - Santana de Parnaíba
 - Cotia
+# Bairros vizinhos com padrão parecido. Só entram quando o bairro sozinho não
+# tem comparáveis suficientes. "prefixos" pega variações (Alphaville 01, 02...).
+regioes:
+- nome: Morumbi
+  cidade: São Paulo
+  bairros: [Real Parque, Jardim Guedala, Jardim Leonor, Panamby, Cidade Jardim, Vila Andrade,
+            Vila Suzana, Jardim Vitória Régia, Vila Progredior, Jardim Everest, Jardim Sílvia]
+  prefixos: [Morumbi, Jardim Morumbi, Jardim Fonte do Morumbi, Paraíso do Morumbi,
+             Portal do Morumbi, Fazenda Morumbi, Parque Morumbi, Jardim Parque Morumbi]
+- nome: Alphaville
+  cidades: [Barueri, Santana de Parnaíba]
+  prefixos: [Alphaville, Residencial Alphaville, Green Valley Alphaville, Dezoito do Forte,
+             Centro Empresarial Alphaville]
+- nome: Tamboré
+  cidades: [Barueri, Santana de Parnaíba]
+  prefixos: [Tamboré, Cidade Tamboré, Residencial Tamboré, Centro Empresarial Tamboré]
+- nome: Granja Viana
+  cidade: Cotia
+  prefixos: [Granja Viana, São Paulo II, Jardim São Paulo II, Palos Verdes, Paisagem Renoir,
+             Gramado, Jardim da Glória, Parque Dom Henrique, Vila de São Fernando,
+             Moinho Velho, Jardim Colibri, Chácara Canta Galo, Taboleiro Verde]

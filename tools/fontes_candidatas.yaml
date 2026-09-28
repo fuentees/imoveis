@@ -1,136 +1,37 @@
-# sondagem temporária de paginação
-- nome: Felt p1
+# Fila de candidatas ainda NÃO ativadas (sondadas em 22/09/2026).
+# O workflow descobrir-fontes roda tools/sondar_fontes.py sobre esta lista;
+# quando uma delas extrair preço e área com consistência, mova o bloco para
+# config.example.yaml. Motivo de cada pendência em docs/fontes.md.
+- nome: Morando em Alphaville
   cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/venda?pg=1&finalidade=venda&pagina=1
-  seletores: &id001
-    card: a[href*='imovel/']:has(h3)
-    link: a
-    titulo: h3
-    bairro: .h6
-    area: div[title='Área'] span
-  pular_param_pagina_1: false
-- nome: Felt imoveis p1
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/imoveis?finalidade=venda&pagina=1
-  seletores: *id001
-  pular_param_pagina_1: false
-- nome: Felt p2
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/venda?pg=1&finalidade=venda&pagina=2
-  seletores: *id001
-  pular_param_pagina_1: false
-- nome: Felt imoveis p2
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/imoveis?finalidade=venda&pagina=2
-  seletores: *id001
-  pular_param_pagina_1: false
-- nome: Felt p3
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/venda?pg=1&finalidade=venda&pagina=3
-  seletores: *id001
-  pular_param_pagina_1: false
-- nome: Felt imoveis p3
-  cidade: Barueri
-  base_url: https://www.feltimoveis.com.br
-  listagem_url: https://www.feltimoveis.com.br/imoveis?finalidade=venda&pagina=3
-  seletores: *id001
-  pular_param_pagina_1: false
-- nome: 'Nunes '
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri
-  seletores: &id002
-    card: div.muda_card2
-    link: a.carousel-cell
-  pular_param_pagina_1: false
-- nome: Nunes /2
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri/2
-  seletores: *id002
-  pular_param_pagina_1: false
-- nome: Nunes ?page=2
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri?page=2
-  seletores: *id002
-  pular_param_pagina_1: false
-- nome: Nunes ?pg=2
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri?pg=2
-  seletores: *id002
-  pular_param_pagina_1: false
-- nome: Nunes /pagina/2
-  cidade: Barueri
-  base_url: https://www.imobiliarianunes.com.br
-  listagem_url: https://www.imobiliarianunes.com.br/comprar/Barueri/pagina/2
-  seletores: *id002
-  pular_param_pagina_1: false
-- nome: 'Unic '
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/buscar/venda
-  seletores: &id003
-    card: a.MuiCard-root
-    link: a
-  pular_param_pagina_1: false
-- nome: Unic ?pagina=2
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/buscar/venda?pagina=2
-  seletores: *id003
-  pular_param_pagina_1: false
-- nome: Unic ?page=2
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/buscar/venda?page=2
-  seletores: *id003
-  pular_param_pagina_1: false
-- nome: Unic /2
-  cidade: Cotia
-  base_url: https://www.unicimoveis.com.br
-  listagem_url: https://www.unicimoveis.com.br/buscar/venda/2
-  seletores: *id003
-  pular_param_pagina_1: false
-- nome: Plus p40
-  cidade: São Paulo
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/40
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/
   seletores:
-    card: a:has(.box-one-infos)
+    card: a.destaquecard
     link: a
-    titulo: .tipo-bairro h4
-    bairro: .tipo-bairro h3
-  pular_param_pagina_1: false
-- nome: Plus p41
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+- nome: Achei Morumbi
   cidade: São Paulo
-  base_url: https://www.plusimoveis.com.br
-  listagem_url: https://www.plusimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/41
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis
   seletores:
-    card: a:has(.box-one-infos)
+    card: a.property-card
     link: a
-    titulo: .tipo-bairro h4
-    bairro: .tipo-bairro h3
-  pular_param_pagina_1: false
-- nome: Guedala p15
+    titulo: .property-card-type
+    bairro: .property-card-location
+    area: .property-card-spec
+- nome: Betta Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar/pag-{page}
+  pular_param_pagina_1: true
+- nome: Lopes Maber - Morumbi
   cidade: São Paulo
-  base_url: https://www.guedalaimoveis.com.br
-  listagem_url: https://www.guedalaimoveis.com.br/imoveis/venda/sp/sao-paulo/morumbi/15/
-  seletores:
-    card: div.box__txtcard
-    link: .box__verdetalhes a
-  pular_param_pagina_1: false
-- nome: Viver p25
-  cidade: São Paulo
-  base_url: https://www.imobiliariavivermorumbi.com.br
-  listagem_url: https://www.imobiliariavivermorumbi.com.br/imoveis/venda/sp/sao-paulo/morumbi/25/
-  seletores:
-    card: div:has(> div.block-imovel.bvalor)
-    link: a.btnDet
-  pular_param_pagina_1: false
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+- nome: Melhores Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://melhoresimoveis.com.br
+  listagem_url: https://melhoresimoveis.com.br/
