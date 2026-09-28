@@ -25,6 +25,7 @@ from urllib.parse import urlsplit
 import log
 from scraper import raspar_todos, validar_detalhes_candidatos
 from analyzer import analisar, comps_do_historico
+from parser import normalizar_texto
 from storage import Storage
 from notifier import Telegram, formatar_alerta
 
@@ -96,12 +97,33 @@ def validar_config(config):
     cotas = config.get("scraper", {}).get("paginas_por_plataforma", {})
     if not isinstance(cotas, dict) or any(type(v) is not int or v < 1 for v in cotas.values()):
         raise ValueError("scraper.paginas_por_plataforma deve mapear plataforma -> páginas (inteiro positivo).")
+    tipos = config.get("analise", {}).get("tipos_alerta", [])
+    if not isinstance(tipos, list) or any(not isinstance(t, str) or not t.strip() for t in tipos):
+        raise ValueError("analise.tipos_alerta deve ser uma lista de tipos (ex.: casa, sobrado).")
     for key in ("exigir_keyword", "permitir_keyword_sem_desconto"):
         if key in config.get("analise", {}) and type(config["analise"][key]) is not bool:
             raise ValueError(f"Valor inválido: analise.{key}")
     a = config.get("analise", {})
     if a.get("preco_m2_min", 300) >= a.get("preco_m2_max", 60000):
         raise ValueError("preco_m2_min deve ser menor que preco_m2_max.")
+
+
+# Sinais de que o imóvel não é uma casa pronta. No título qualquer um desclassifica;
+# na descrição só os de obra/planta (descrição de casa costuma citar "terreno de 500 m²").
+_NAO_PRONTO_TITULO = ("terreno", "lote", "galpao", "na planta", "em construcao",
+                      "lancamento", "pre-lancamento", "pre lancamento")
+_NAO_PRONTO_DESCRICAO = ("na planta", "em construcao", "previsao de entrega",
+                         "entrega prevista", "obra em andamento", "pre-lancamento")
+
+
+def _alertavel(im, tipos):
+    """Só alerta os tipos pedidos (ex.: casas) e prontos para morar."""
+    if tipos and normalizar_texto(im.tipo) not in tipos:
+        return False
+    titulo = normalizar_texto(im.titulo)
+    descricao = normalizar_texto(im.descricao)
+    return not (any(t in titulo for t in _NAO_PRONTO_TITULO)
+                or any(t in descricao for t in _NAO_PRONTO_DESCRICAO))
 
 
 def _deve_realertar(im, preco_anterior, queda_min):
@@ -205,7 +227,10 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         preco_m2_max=a.get("preco_m2_max", 60_000),
         historico=historico,
     )
+    tipos = {normalizar_texto(t) for t in a.get("tipos_alerta", [])}
+    ops = [im for im in ops if _alertavel(im, tipos)]           # antes de abrir detalhes
     ops = validar_detalhes_candidatos(ops, config, relatorio)
+    ops = [im for im in ops if _alertavel(im, tipos)]           # descrição completa
     _log.info("Oportunidades detectadas: %s", len(ops))
     relatorio["oportunidades"] = len(ops)
 

@@ -109,3 +109,32 @@ def test_config_de_exemplo_valida_cotas():
     except ValueError:
         return
     raise AssertionError("cota zero deveria ser rejeitada")
+
+
+def _im(tipo, titulo, descricao=""):
+    return SimpleNamespace(tipo=tipo, titulo=titulo, descricao=descricao)
+
+
+def test_so_casas_prontas_geram_alerta():
+    from main import _alertavel
+    tipos = {"casa", "sobrado"}
+    assert _alertavel(_im("casa", "Casa com 3 quartos", "Casa em terreno de 500 m²"), tipos)
+    assert _alertavel(_im("sobrado", "Sobrado em condomínio"), tipos)
+    assert not _alertavel(_im("apartamento", "Apartamento com 2 quartos"), tipos)
+    # classificado errado como casa, mas o título entrega
+    assert not _alertavel(_im("casa", "Terreno/Lote à Venda com 700m²"), tipos)
+    assert not _alertavel(_im("casa", "Casa nova", "Casa na planta, entrega prevista em 2027"), tipos)
+    assert not _alertavel(_im("casa", "Casa em construção no Jardim Acapulco"), tipos)
+
+
+def test_tipo_vem_do_titulo_antes_do_card(monkeypatch):
+    from unittest.mock import Mock
+    html = """<div class='c'><a href='/1'><h2>Terreno/Lote à Venda com 700m²</h2></a>
+    Ótimo para construir sua casa. R$ 300.000 700 m²</div>"""
+    sess = Mock(headers={})
+    sess.get.return_value = SimpleNamespace(text=html, encoding="utf-8", raise_for_status=lambda: None)
+    cfg = dict(nome="t", base_url="https://x", listagem_url="https://x/v", cidade="Bertioga",
+               seletores=dict(card="div.c", titulo="h2"))
+    monkeypatch.setattr("scraper.time.sleep", lambda _: None)
+    ims = scraper.raspar_site(cfg, session=sess, respeitar_robots=False)
+    assert ims[0].tipo == "terreno"

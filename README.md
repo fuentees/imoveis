@@ -16,7 +16,10 @@ palavras-chave de espólio / venda urgente**. Manda os achados pelo **Telegram**
 4. **Sinaliza** quem está X% abaixo da mediana dos próprios comparáveis.
 5. **Cruza com palavras-chave** (`espólio`, `inventário`, `urgente`, `aceito
    proposta`...). Esse é o sinal que separa oportunidade real de imóvel-problema.
-6. **Pontua e alerta** no Telegram (sem repetir imóvel já enviado; só re-alerta
+6. **Filtra o tipo**: por padrão só casas e sobrados prontos geram alerta
+   (`analise.tipos_alerta`); terreno, lote, galpão, apartamento e imóvel na planta
+   ou em construção ficam só como base de preços.
+7. **Pontua e alerta** no Telegram (sem repetir imóvel já enviado; só re-alerta
    se o preço cair mais depois). Envia no máximo 10 por ciclo, do maior score
    para o menor; o restante fica automaticamente para o ciclo seguinte.
 
