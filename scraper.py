@@ -285,7 +285,10 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
                 if cidade_auto and c_txt:
                     cidade = c_txt
 
-            tipo = tipo_padrao or parse_tipo(_selec(card, sel.get("tipo")) or f"{titulo} {texto_card}")
+            # o título manda: "Terreno/Lote à Venda" não vira casa só porque o
+            # card menciona "casa" em outro trecho
+            tipo = (tipo_padrao or parse_tipo(_selec(card, sel.get("tipo")))
+                    or parse_tipo(titulo) or parse_tipo(texto_card))
 
             im = Imovel(
                 url=link,

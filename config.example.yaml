@@ -26,6 +26,11 @@ analise:
   preco_m2_max: 60000
   historico_dias: 180
   realerta_queda: 0.1
+  # Só casas prontas geram alerta (terreno, lote, galpão, apartamento e imóvel
+  # na planta/em construção ficam de fora). Os demais continuam na base de preços.
+  tipos_alerta:
+  - casa
+  - sobrado
   max_alertas_por_ciclo: 10
   max_alertas_por_dominio: 2
   max_alertas_por_dominio_dia: 4
