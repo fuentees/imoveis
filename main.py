@@ -24,7 +24,7 @@ from urllib.parse import urlsplit
 
 import log
 from scraper import raspar_todos, validar_detalhes_candidatos
-from analyzer import analisar, comps_do_historico
+from analyzer import analisar, comps_do_historico, montar_regioes
 from parser import normalizar_texto
 from storage import Storage
 from notifier import Telegram, formatar_alerta
@@ -76,6 +76,7 @@ def validar_config(config):
             raise ValueError("paginas deve ser um inteiro positivo.")
     ranges = {
         "analise": {"min_amostra": (2, None), "limiar_desconto": (0, 1),
+                    "limiar_desconto_regiao": (0, 1),
                     "realerta_queda": (0, 1), "historico_dias": (0, None),
                     "max_alertas_por_ciclo": (1, None),
                     "max_alertas_por_dominio": (1, None),
@@ -100,6 +101,14 @@ def validar_config(config):
     tipos = config.get("analise", {}).get("tipos_alerta", [])
     if not isinstance(tipos, list) or any(not isinstance(t, str) or not t.strip() for t in tipos):
         raise ValueError("analise.tipos_alerta deve ser uma lista de tipos (ex.: casa, sobrado).")
+    regioes = config.get("regioes", [])
+    if not isinstance(regioes, list):
+        raise ValueError("regioes deve ser uma lista.")
+    for r in regioes:
+        if (not isinstance(r, dict) or not isinstance(r.get("nome"), str) or not r["nome"].strip()
+                or not (r.get("cidade") or r.get("cidades"))
+                or not (r.get("bairros") or r.get("prefixos"))):
+            raise ValueError("Cada região precisa de nome, cidade(s) e bairros ou prefixos.")
     for key in ("exigir_keyword", "permitir_keyword_sem_desconto"):
         if key in config.get("analise", {}) and type(config["analise"][key]) is not bool:
             raise ValueError(f"Valor inválido: analise.{key}")
@@ -212,8 +221,9 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
                                relatorio)
 
     a = config.get("analise", {})
+    regioes = montar_regioes(config.get("regioes"))
     historico = comps_do_historico(
-        storage.carregar_comparaveis(dias=a.get("historico_dias", 180)))
+        storage.carregar_comparaveis(dias=a.get("historico_dias", 180)), regioes)
     _log.info("Comparáveis do histórico: %s", len(historico))
 
     ops = analisar(
@@ -226,6 +236,8 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         preco_m2_min=a.get("preco_m2_min", 300),
         preco_m2_max=a.get("preco_m2_max", 60_000),
         historico=historico,
+        regioes=regioes,
+        limiar_desconto_regiao=a.get("limiar_desconto_regiao"),
     )
     tipos = {normalizar_texto(t) for t in a.get("tipos_alerta", [])}
     ops = [im for im in ops if _alertavel(im, tipos)]           # antes de abrir detalhes

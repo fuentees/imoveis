@@ -75,6 +75,9 @@ class Imovel:
     n_grupo: int = field(default=0)
     pct_abaixo: float = field(default=0.0)     # 0.35 = 35% abaixo da mediana
     criterio: str = field(default="")          # base de comparação, em texto
+    regiao: str = field(default="")            # chave da região, se o bairro estiver em uma
+    base_regiao: bool = field(default=False)
+    nome_regiao: str = field(default="")   # comparado com a região (bairro com amostra pequena)
     keywords: list = field(default_factory=list)
     score: float = field(default=0.0)
 
@@ -90,6 +93,7 @@ class Comp:
     quartos: Optional[int]
     preco_m2: float
     url: str = ""
+    regiao: str = ""          # chave da região (bairros vizinhos), se houver
 
 
 def canon_bairro(s: str) -> str:
@@ -100,12 +104,52 @@ def canon_bairro(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+# Tipos que o mercado compara entre si: sobrado é casa com dois pisos.
+_TIPO_GRUPO = {"sobrado": "casa"}
+
+
+def tipo_grupo(tipo: str) -> str:
+    t = normalizar_texto(tipo)
+    return _TIPO_GRUPO.get(t, t)
+
+
 def _chave(cidade: str, bairro: str, tipo: str) -> str:
     return "|".join([
         normalizar_texto(cidade),
         canon_bairro(bairro),
-        normalizar_texto(tipo) or "tipo?",
+        tipo_grupo(tipo) or "tipo?",
     ])
+
+
+def montar_regioes(config_regioes):
+    """
+    Lista do config -> lista de (cidades normalizadas, bairros exatos, prefixos, nome).
+    Uma região pode abranger mais de uma cidade (Alphaville fica em Barueri e
+    Santana de Parnaíba).
+    """
+    out = []
+    for r in config_regioes or []:
+        cidades = r.get("cidades") or [r.get("cidade", "")]
+        out.append(({normalizar_texto(c) for c in cidades},
+                    {canon_bairro(b) for b in r.get("bairros", [])},
+                    tuple(canon_bairro(p) for p in r.get("prefixos", [])),
+                    r["nome"]))
+    return out
+
+
+def regiao_de(cidade: str, bairro: str, regioes) -> str:
+    """Nome da região do bairro, ou '' se ele não estiver em nenhuma."""
+    c, b = normalizar_texto(cidade), canon_bairro(bairro)
+    if not b:
+        return ""
+    for cidades, bairros, prefixos, nome in regioes or []:
+        if c in cidades and (b in bairros or any(b.startswith(p) for p in prefixos)):
+            return nome
+    return ""
+
+
+def _chave_regiao(regiao: str, tipo: str) -> str:
+    return f"regiao:{normalizar_texto(regiao)}|{tipo_grupo(tipo) or 'tipo?'}" if regiao else ""
 
 
 def chave_grupo(im: Imovel) -> str:
@@ -117,7 +161,7 @@ def detectar_keywords(im: Imovel) -> list:
     return [kw for kw in PALAVRAS_CHAVE if kw in texto]
 
 
-def comps_do_historico(rows) -> list:
+def comps_do_historico(rows, regioes=None) -> list:
     """
     rows: iterável de (url, cidade, bairro, tipo, area, quartos, preco_m2) vindo
     do banco. Vira uma lista de Comp para engrossar a amostra das medianas.
@@ -128,7 +172,8 @@ def comps_do_historico(rows) -> list:
             continue
         out.append(Comp(_chave(cidade or "", bairro or "", tipo or ""),
                         float(area), int(quartos) if quartos else None,
-                        float(preco_m2), url or ""))
+                        float(preco_m2), url or "",
+                        _chave_regiao(regiao_de(cidade or "", bairro or "", regioes), tipo or "")))
     return out
 
 
@@ -222,16 +267,17 @@ def _descreve_criterio(im: Imovel) -> str:
     if im.quartos:
         q_lo = max(1, im.quartos - _QUARTOS_TOL)
         partes.append(f"{q_lo}–{im.quartos + _QUARTOS_TOL} quartos")
-    onde = im.bairro or im.cidade
-    if onde:
-        partes.append(f"em {onde}")
+    if im.base_regiao:
+        partes.append(f"na região {im.nome_regiao}")
+    elif im.bairro or im.cidade:
+        partes.append(f"em {im.bairro or im.cidade}")
     return ", ".join(partes)
 
 
 def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
              permitir_keyword_sem_desconto=False,
              preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000,
-             historico=None):
+             historico=None, regioes=None, limiar_desconto_regiao=None):
     """
     min_amostra: mínimo de comparáveis para confiar na mediana.
     limiar_desconto: % abaixo da mediana para virar candidato (0.30 = 30%).
@@ -240,6 +286,9 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
         disparar sem deságio comprovado. O padrão False evita falsos positivos.
     preco_min / preco_m2_min / preco_m2_max: piso e teto de sanidade.
     historico: lista de Comp (ver comps_do_historico) para engrossar a amostra.
+    regioes: saída de montar_regioes(). Quando o bairro não tem `min_amostra`
+        comparáveis, compara com a região inteira (bairros vizinhos), exigindo
+        `limiar_desconto_regiao` (mais rígido; padrão limiar + 0.10).
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
     """
     imoveis = _dedupe(imoveis)
@@ -254,6 +303,8 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
             continue  # dado implausível -> fora
         im.preco_m2 = pm2
         im.grupo = chave_grupo(im)
+        im.nome_regiao = regiao_de(im.cidade, im.bairro, regioes)
+        im.regiao = _chave_regiao(im.nome_regiao, im.tipo)
         validos.append(im)
 
     # 2. pool de comparáveis por grupo: os válidos desta raspagem + histórico.
@@ -262,19 +313,31 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
     urls_atuais = set()
     for im in validos:
         urls_atuais.add(im.url.rstrip("/"))
-        pool.setdefault(im.grupo, []).append(
-            Comp(im.grupo, im.area, im.quartos, im.preco_m2, im.url))
+        c = Comp(im.grupo, im.area, im.quartos, im.preco_m2, im.url, im.regiao)
+        pool.setdefault(im.grupo, []).append(c)
+        if im.regiao:
+            pool.setdefault(im.regiao, []).append(c)
     for c in (historico or []):
         if not (preco_m2_min <= c.preco_m2 <= preco_m2_max):
             continue
         if c.url and c.url.rstrip("/") in urls_atuais:
             continue
         pool.setdefault(c.grupo, []).append(c)
+        if c.regiao:
+            pool.setdefault(c.regiao, []).append(c)
+    if limiar_desconto_regiao is None:
+        limiar_desconto_regiao = min(limiar_desconto + 0.10, 0.9)
 
     # 3 + 4. desconto vs mediana dos comparáveis + keywords
     oportunidades = []
     for im in validos:
         pm2s = _comparaveis(im, pool.get(im.grupo, []))
+        limiar = limiar_desconto
+        if len(pm2s) < min_amostra and im.regiao:
+            # bairro com amostra pequena: compara com os vizinhos, exigindo mais deságio
+            pm2s_regiao = _comparaveis(im, pool.get(im.regiao, []))
+            if len(pm2s_regiao) >= min_amostra:
+                pm2s, limiar, im.base_regiao = pm2s_regiao, limiar_desconto_regiao, True
         n = len(pm2s)
         im.n_grupo = n
         im.keywords = detectar_keywords(im)
@@ -285,7 +348,7 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
             im.mediana_grupo = med
             if med > 0:
                 im.pct_abaixo = (med - im.preco_m2) / med
-                barato = im.pct_abaixo >= limiar_desconto
+                barato = im.pct_abaixo >= limiar
                 im.criterio = _descreve_criterio(im)
 
         # Palavra-chave reforça a prioridade, mas por padrão não substitui a
