@@ -940,3 +940,17 @@ regioes:
   prefixos: [Granja Viana, São Paulo II, Jardim São Paulo II, Palos Verdes, Paisagem Renoir,
              Gramado, Jardim da Glória, Parque Dom Henrique, Vila de São Fernando,
              Moinho Velho, Jardim Colibri, Chácara Canta Galo, Taboleiro Verde]
+- nome: Pirituba
+  cidade: São Paulo
+  bairros: [Vila Clarice, Jardim Santa Mônica, Jardim Iris, Vila Zat, Jardim São José,
+            Vila Pereira Barreto, Parque Maria Domitila, Conjunto Residencial Vista Verde,
+            Vila Mangalot, Jardim Mangalot, Vila Mirante, Jardim Felicidade,
+            Jardim Regina, Vila Bonilha, Vila Palmeiras, Jardim Ipê]
+  prefixos: [Pirituba, Vila Pirituba, Jardim Cidade Pirituba, Parque São Domingos,
+             Jardim Pirituba, São Domingos]
+- nome: Jaraguá
+  cidade: São Paulo
+  bairros: [City Jaraguá, Jardim Santa Fé, Jardim Ipanema, Parque Panamericano, Jardim Líbano,
+            Jardim Líder, Vila Aurora, Jardim Vivan, Jardim Britânia, Jardim Rincão, Vila Sulina,
+            Jardim Nardini, Parque Nações Unidas]
+  prefixos: [Jaraguá, Jardim Jaraguá, Vila Jaraguá, Chácara Jaraguá, Pico do Jaraguá]
