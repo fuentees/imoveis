@@ -77,6 +77,7 @@ def validar_config(config):
     ranges = {
         "analise": {"min_amostra": (2, None), "limiar_desconto": (0, 1),
                     "limiar_desconto_regiao": (0, 1),
+                    "desconto_maximo": (0, 1),
                     "realerta_queda": (0, 1), "historico_dias": (0, None),
                     "max_alertas_por_ciclo": (1, None),
                     "max_alertas_por_dominio": (1, None),
@@ -238,6 +239,7 @@ def rodar_ciclo(config, storage, tg, dry_run=False, max_paginas=None, relatorio=
         historico=historico,
         regioes=regioes,
         limiar_desconto_regiao=a.get("limiar_desconto_regiao"),
+        desconto_maximo=a.get("desconto_maximo"),
     )
     tipos = {normalizar_texto(t) for t in a.get("tipos_alerta", [])}
     ops = [im for im in ops if _alertavel(im, tipos)]           # antes de abrir detalhes

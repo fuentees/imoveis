@@ -277,7 +277,8 @@ def _descreve_criterio(im: Imovel) -> str:
 def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
              permitir_keyword_sem_desconto=False,
              preco_min=50_000, preco_m2_min=300, preco_m2_max=60_000,
-             historico=None, regioes=None, limiar_desconto_regiao=None):
+             historico=None, regioes=None, limiar_desconto_regiao=None,
+             desconto_maximo=None):
     """
     min_amostra: mínimo de comparáveis para confiar na mediana.
     limiar_desconto: % abaixo da mediana para virar candidato (0.30 = 30%).
@@ -289,6 +290,8 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
     regioes: saída de montar_regioes(). Quando o bairro não tem `min_amostra`
         comparáveis, compara com a região inteira (bairros vizinhos), exigindo
         `limiar_desconto_regiao` (mais rígido; padrão limiar + 0.10).
+    desconto_maximo: acima disso (ex.: 0.75) o "desconto" é tratado como erro de
+        cadastro (área de terreno no lugar da construída, preço truncado) e não alerta.
     Retorna lista de Imovel marcados como oportunidade, ordenada por score.
     """
     imoveis = _dedupe(imoveis)
@@ -348,7 +351,8 @@ def analisar(imoveis, min_amostra=4, limiar_desconto=0.30, exigir_keyword=False,
             im.mediana_grupo = med
             if med > 0:
                 im.pct_abaixo = (med - im.preco_m2) / med
-                barato = im.pct_abaixo >= limiar
+                barato = im.pct_abaixo >= limiar and not (
+                    desconto_maximo and im.pct_abaixo > desconto_maximo)
                 im.criterio = _descreve_criterio(im)
 
         # Palavra-chave reforça a prioridade, mas por padrão não substitui a
