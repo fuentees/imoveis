@@ -1,37 +1,133 @@
-# Fila de candidatas ainda NÃO ativadas (sondadas em 22/09/2026).
-# O workflow descobrir-fontes roda tools/sondar_fontes.py sobre esta lista;
-# quando uma delas extrair preço e área com consistência, mova o bloco para
-# config.example.yaml. Motivo de cada pendência em docs/fontes.md.
-- nome: Morando em Alphaville
-  cidade: Barueri
-  base_url: https://www.morandoemalphaville.com
-  listagem_url: https://www.morandoemalphaville.com/
-  seletores:
-    card: a.destaquecard
-    link: a
-    titulo: .destaquecard__name
-    bairro: .destaquecard__location
-    descricao: .destaquecard__description
-- nome: Achei Morumbi
+# sondagem temporária: Pirituba, Jaraguá, Vila Clarice
+- nome: Global Pirituba home
   cidade: São Paulo
-  base_url: https://acheimorumbi.com.br
-  listagem_url: https://acheimorumbi.com.br/imoveis
-  seletores:
-    card: a.property-card
-    link: a
-    titulo: .property-card-type
-    bairro: .property-card-location
-    area: .property-card-spec
-- nome: Betta Imóveis - Alphaville
-  cidade: Barueri
-  base_url: https://bettaimoveisalphaville.com.br
-  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar/pag-{page}
-  pular_param_pagina_1: true
-- nome: Lopes Maber - Morumbi
+  base_url: https://www.globalimoveispirituba.com.br
+  listagem_url: https://www.globalimoveispirituba.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Global Pirituba casas
   cidade: São Paulo
-  base_url: https://www.maber.com.br
-  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
-- nome: Melhores Imóveis - Alphaville
-  cidade: Barueri
-  base_url: https://melhoresimoveis.com.br
-  listagem_url: https://melhoresimoveis.com.br/
+  base_url: https://www.globalimoveispirituba.com.br
+  listagem_url: https://www.globalimoveispirituba.com.br/resultado/Index.asp?filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1&Ordem=areat+desc&selfiltro=3&selfiltrop=30&refino=Casa+para+venda+e+loca%EF%BF%BD%EF%BF%BDo
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Alvara home
+  cidade: São Paulo
+  base_url: https://www.alvaraimoveis.com.br
+  listagem_url: https://www.alvaraimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Alvara sobrados
+  cidade: São Paulo
+  base_url: https://alvaraimoveis.com.br
+  listagem_url: https://alvaraimoveis.com.br/resultado/?NumPagMax=5&Ordem=preco+desc&PagAtual=1&Submit=5&VarPagMax=5&campo_busca=&filtro=where+categoria+%3D+%27Sobrado%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&refino=Sobrado+para+venda+e+loca%EF%BF%BD%EF%BF%BDo&selfiltrop=50&string_busca=
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: FJR home
+  cidade: São Paulo
+  base_url: https://www.fjrimobiliaria.com.br
+  listagem_url: https://www.fjrimobiliaria.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Mutinga home
+  cidade: São Paulo
+  base_url: https://www.imobiliariamutinga.com.br
+  listagem_url: https://www.imobiliariamutinga.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Top Lar home
+  cidade: São Paulo
+  base_url: https://www.toplarimoveis.com.br
+  listagem_url: https://www.toplarimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Mediz home
+  cidade: São Paulo
+  base_url: https://medizimoveis.com.br
+  listagem_url: https://medizimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Pierri home
+  cidade: São Paulo
+  base_url: https://www.pierriimoveis.com.br
+  listagem_url: https://www.pierriimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Negociando home
+  cidade: São Paulo
+  base_url: https://www.negociandoimovel.com.br
+  listagem_url: https://www.negociandoimovel.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Portal Pirituba
+  cidade: São Paulo
+  base_url: https://imoveis.portaldepirituba.com.br
+  listagem_url: https://imoveis.portaldepirituba.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Roberto e Santos
+  cidade: São Paulo
+  base_url: https://www.robertoesantos.com.br
+  listagem_url: https://www.robertoesantos.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Mourad
+  cidade: São Paulo
+  base_url: https://mouradimoveis.com.br
+  listagem_url: https://mouradimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Jaragua Imoveis
+  cidade: São Paulo
+  base_url: https://www.jaraguaimoveis.com.br
+  listagem_url: https://www.jaraguaimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Fazendinha
+  cidade: São Paulo
+  base_url: https://www.fazendinhaimoveis.com.br
+  listagem_url: https://www.fazendinhaimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Acropole Perus
+  cidade: São Paulo
+  base_url: https://www.acropoleimoveis.com.br
+  listagem_url: https://www.acropoleimoveis.com.br/imoveis
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Bressa
+  cidade: São Paulo
+  base_url: https://bressaimoveis.com.br
+  listagem_url: https://bressaimoveis.com.br/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Zoimovel Pirituba
+  cidade: São Paulo
+  base_url: https://www.zoimovel.com.br
+  listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/pirituba/zona-oeste/sao-paulo/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Zoimovel Jaragua
+  cidade: São Paulo
+  base_url: https://www.zoimovel.com.br
+  listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/jaragua/zona-norte/sao-paulo/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Zoimovel Vila Clarice
+  cidade: São Paulo
+  base_url: https://www.zoimovel.com.br
+  listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/vila-clarice/zona-oeste/sao-paulo/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Chaves na Mao Jaragua
+  cidade: São Paulo
+  base_url: https://www.chavesnamao.com.br
+  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/jaragua/
+  detalhar: true
+  pular_param_pagina_1: false
+- nome: Lopes Vila Clarice
+  cidade: São Paulo
+  base_url: https://www.lopes.com.br
+  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/vila-clarice/tipo/casa
+  detalhar: true
+  pular_param_pagina_1: false
