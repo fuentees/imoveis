@@ -163,6 +163,7 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
       bairro_apos: " - "         -> o bairro é o trecho depois do último separador.
       bairro_url_segmento: -2    -> sem bairro no card, usa esse trecho do caminho da URL.
+      encoding: windows-1252     -> força a codificação quando o site não declara charset.
     """
     diagnostico = diagnostico if diagnostico is not None else {}
     diagnostico.update(status="ok", paginas=0, erros=[], precos_parciais=0)
@@ -207,6 +208,8 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
 
         try:
             r = _baixar(sess, url, timeout, verify_ssl, tentativas=3)
+            if site_cfg.get("encoding"):     # site sem charset declarado (ex.: windows-1252)
+                r.encoding = site_cfg["encoding"]
         except Exception as e:
             _log.warning("  [!] %s pag %s: erro ao baixar (%s)", nome, p, e)
             diagnostico["status"] = "erro_http"

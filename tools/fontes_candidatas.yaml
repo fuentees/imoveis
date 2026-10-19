@@ -1,133 +1,244 @@
-# sondagem temporária: Pirituba, Jaraguá, Vila Clarice
-- nome: Global Pirituba home
+# sondagem temporária: Pirituba, Jaraguá, Vila Clarice (rodada 2)
+- nome: Global Casa p1
   cidade: São Paulo
   base_url: https://www.globalimoveispirituba.com.br
-  listagem_url: https://www.globalimoveispirituba.com.br/
-  detalhar: true
+  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=1&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Global Pirituba casas
+  detalhar: true
+  seletores: &id001
+    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
+    link: a[href*='detalhes-do-imovel']
+    titulo: h4
+    bairro: h3
+  encoding: windows-1252
+- nome: Global Casa p2
   cidade: São Paulo
   base_url: https://www.globalimoveispirituba.com.br
-  listagem_url: https://www.globalimoveispirituba.com.br/resultado/Index.asp?filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1&Ordem=areat+desc&selfiltro=3&selfiltrop=30&refino=Casa+para+venda+e+loca%EF%BF%BD%EF%BF%BDo
-  detalhar: true
+  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=2&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Alvara home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Global Sobrado p1
+  cidade: São Paulo
+  base_url: https://www.globalimoveispirituba.com.br
+  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=1&Ordem=areat+desc&string_busca=&campo_busca=
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Global Sobrado p2
+  cidade: São Paulo
+  base_url: https://www.globalimoveispirituba.com.br
+  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=2&Ordem=areat+desc&string_busca=&campo_busca=
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Alvara Casa p1
   cidade: São Paulo
   base_url: https://www.alvaraimoveis.com.br
-  listagem_url: https://www.alvaraimoveis.com.br/
-  detalhar: true
+  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Casa%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=1&Ordem=preco+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Alvara sobrados
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Alvara Casa p2
   cidade: São Paulo
-  base_url: https://alvaraimoveis.com.br
-  listagem_url: https://alvaraimoveis.com.br/resultado/?NumPagMax=5&Ordem=preco+desc&PagAtual=1&Submit=5&VarPagMax=5&campo_busca=&filtro=where+categoria+%3D+%27Sobrado%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&refino=Sobrado+para+venda+e+loca%EF%BF%BD%EF%BF%BDo&selfiltrop=50&string_busca=
-  detalhar: true
+  base_url: https://www.alvaraimoveis.com.br
+  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Casa%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=2&Ordem=preco+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: FJR home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Alvara Sobrado p1
   cidade: São Paulo
-  base_url: https://www.fjrimobiliaria.com.br
-  listagem_url: https://www.fjrimobiliaria.com.br/
-  detalhar: true
+  base_url: https://www.alvaraimoveis.com.br
+  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Sobrado%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=1&Ordem=preco+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Mutinga home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Alvara Sobrado p2
+  cidade: São Paulo
+  base_url: https://www.alvaraimoveis.com.br
+  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Sobrado%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=2&Ordem=preco+desc&string_busca=&campo_busca=
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Mutinga Casa p1
   cidade: São Paulo
   base_url: https://www.imobiliariamutinga.com.br
-  listagem_url: https://www.imobiliariamutinga.com.br/
-  detalhar: true
+  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=1&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Top Lar home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Mutinga Casa p2
   cidade: São Paulo
-  base_url: https://www.toplarimoveis.com.br
-  listagem_url: https://www.toplarimoveis.com.br/
-  detalhar: true
+  base_url: https://www.imobiliariamutinga.com.br
+  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit=2&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Mediz home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Mutinga Sobrado p1
   cidade: São Paulo
-  base_url: https://medizimoveis.com.br
-  listagem_url: https://medizimoveis.com.br/
-  detalhar: true
+  base_url: https://www.imobiliariamutinga.com.br
+  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=1&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=1&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Pierri home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Mutinga Sobrado p2
   cidade: São Paulo
-  base_url: https://www.pierriimoveis.com.br
-  listagem_url: https://www.pierriimoveis.com.br/
-  detalhar: true
+  base_url: https://www.imobiliariamutinga.com.br
+  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual=2&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit=2&Ordem=areat+desc&string_busca=&campo_busca=
   pular_param_pagina_1: false
-- nome: Negociando home
+  detalhar: true
+  seletores: *id001
+  encoding: windows-1252
+- nome: Pierri imoveis.php
   cidade: São Paulo
-  base_url: https://www.negociandoimovel.com.br
-  listagem_url: https://www.negociandoimovel.com.br/
-  detalhar: true
+  base_url: https://www.pierriimoveis.com
+  listagem_url: https://www.pierriimoveis.com/imoveis.php
   pular_param_pagina_1: false
-- nome: Portal Pirituba
+  detalhar: true
+  seletores: &id002
+    card: div.as-card__corpo
+    link: h3 a
+    titulo: h3
+    bairro: .as-local
+    area: .as-specs li
+  bairro_apos: ' · '
+- nome: Pierri venda p2
   cidade: São Paulo
-  base_url: https://imoveis.portaldepirituba.com.br
-  listagem_url: https://imoveis.portaldepirituba.com.br/
-  detalhar: true
+  base_url: https://www.pierriimoveis.com
+  listagem_url: https://www.pierriimoveis.com/imoveis.php?finalidade=venda&pagina=2
   pular_param_pagina_1: false
-- nome: Roberto e Santos
+  detalhar: true
+  seletores: *id002
+  bairro_apos: ' · '
+- nome: Roberto Santos JCP
   cidade: São Paulo
   base_url: https://www.robertoesantos.com.br
-  listagem_url: https://www.robertoesantos.com.br/
-  detalhar: true
+  listagem_url: https://www.robertoesantos.com.br/imoveis/venda/sao-paulo/jardim-cidade-pirituba/casa-sobrado
   pular_param_pagina_1: false
-- nome: Mourad
-  cidade: São Paulo
-  base_url: https://mouradimoveis.com.br
-  listagem_url: https://mouradimoveis.com.br/
   detalhar: true
-  pular_param_pagina_1: false
-- nome: Jaragua Imoveis
+- nome: Jaragua Imoveis home
   cidade: São Paulo
   base_url: https://www.jaraguaimoveis.com.br
   listagem_url: https://www.jaraguaimoveis.com.br/
-  detalhar: true
   pular_param_pagina_1: false
-- nome: Fazendinha
-  cidade: São Paulo
-  base_url: https://www.fazendinhaimoveis.com.br
-  listagem_url: https://www.fazendinhaimoveis.com.br/
   detalhar: true
-  pular_param_pagina_1: false
-- nome: Acropole Perus
+  seletores:
+    card: a.destaquecard
+    link: a
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+- nome: Acropole venda
   cidade: São Paulo
   base_url: https://www.acropoleimoveis.com.br
-  listagem_url: https://www.acropoleimoveis.com.br/imoveis
-  detalhar: true
+  listagem_url: https://www.acropoleimoveis.com.br/imoveis/venda
   pular_param_pagina_1: false
-- nome: Bressa
+  detalhar: true
+  seletores:
+    card: div.property_card
+    link: a[href*='imov']
+- nome: Acropole venda p2
   cidade: São Paulo
-  base_url: https://bressaimoveis.com.br
-  listagem_url: https://bressaimoveis.com.br/
-  detalhar: true
+  base_url: https://www.acropoleimoveis.com.br
+  listagem_url: https://www.acropoleimoveis.com.br/imoveis/venda?page=2
   pular_param_pagina_1: false
+  detalhar: true
+  seletores:
+    card: div.property_card
+    link: a[href*='imov']
+- nome: Chaves na Mao jaragua
+  cidade: São Paulo
+  base_url: https://www.chavesnamao.com.br
+  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/jaragua/
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: &id003
+    card: a[class*='link_rawLink']
+    link: a
+    titulo: h2
+    bairro: p[class*='addressCity']
+- nome: Chaves na Mao pirituba
+  cidade: São Paulo
+  base_url: https://www.chavesnamao.com.br
+  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/pirituba/
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id003
+- nome: Chaves na Mao vila-clarice
+  cidade: São Paulo
+  base_url: https://www.chavesnamao.com.br
+  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/vila-clarice/
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id003
+- nome: Chaves na Mao pirituba pg2
+  cidade: São Paulo
+  base_url: https://www.chavesnamao.com.br
+  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/pirituba/?pg=2
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id003
+- nome: Lopes vila-clarice
+  cidade: São Paulo
+  base_url: https://www.lopes.com.br
+  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/vila-clarice/tipo/casa
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: &id004
+    card: a[href^='/imovel/']
+    link: a
+- nome: Lopes pirituba
+  cidade: São Paulo
+  base_url: https://www.lopes.com.br
+  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/pirituba/tipo/casa
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id004
+- nome: Lopes jaragua
+  cidade: São Paulo
+  base_url: https://www.lopes.com.br
+  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/jaragua/tipo/casa
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id004
+- nome: Lopes pirituba p2
+  cidade: São Paulo
+  base_url: https://www.lopes.com.br
+  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/pirituba/tipo/casa/pagina/2
+  pular_param_pagina_1: false
+  detalhar: true
+  seletores: *id004
 - nome: Zoimovel Pirituba
   cidade: São Paulo
   base_url: https://www.zoimovel.com.br
   listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/pirituba/zona-oeste/sao-paulo/
-  detalhar: true
   pular_param_pagina_1: false
-- nome: Zoimovel Jaragua
+  detalhar: true
+- nome: Mediz imoveis
   cidade: São Paulo
-  base_url: https://www.zoimovel.com.br
-  listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/jaragua/zona-norte/sao-paulo/
-  detalhar: true
+  base_url: https://medizimoveis.com.br
+  listagem_url: https://medizimoveis.com.br/imoveis/
   pular_param_pagina_1: false
-- nome: Zoimovel Vila Clarice
+  detalhar: true
+  seletores:
+    card: div.item-wrap
+    link: a.hover-effect
+- nome: Mediz venda
   cidade: São Paulo
-  base_url: https://www.zoimovel.com.br
-  listagem_url: https://www.zoimovel.com.br/imoveis/casas/venda/vila-clarice/zona-oeste/sao-paulo/
-  detalhar: true
+  base_url: https://medizimoveis.com.br
+  listagem_url: https://medizimoveis.com.br/imovel/venda/sp/sao-paulo/
   pular_param_pagina_1: false
-- nome: Chaves na Mao Jaragua
-  cidade: São Paulo
-  base_url: https://www.chavesnamao.com.br
-  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/jaragua/
   detalhar: true
-  pular_param_pagina_1: false
-- nome: Lopes Vila Clarice
-  cidade: São Paulo
-  base_url: https://www.lopes.com.br
-  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/vila-clarice/tipo/casa
-  detalhar: true
-  pular_param_pagina_1: false
+  seletores:
+    card: div.item-wrap
+    link: a.hover-effect
