@@ -163,6 +163,9 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
       verificar_ssl: false       -> não valida o certificado TLS DESTE site.
       bairro_apos: " - "         -> o bairro é o trecho depois do último separador.
       bairro_url_segmento: -2    -> sem bairro no card, usa esse trecho do caminho da URL.
+      encoding: windows-1252     -> força a codificação quando o site não declara charset.
+      bairro_url_regex: "..."    -> sem bairro no card, extrai do caminho da URL (grupo 1).
+      url_deve_conter: "..."     -> ignora cards cujo link não contém o trecho.
     """
     diagnostico = diagnostico if diagnostico is not None else {}
     diagnostico.update(status="ok", paginas=0, erros=[], precos_parciais=0)
@@ -207,6 +210,8 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
 
         try:
             r = _baixar(sess, url, timeout, verify_ssl, tentativas=3)
+            if site_cfg.get("encoding"):     # site sem charset declarado (ex.: windows-1252)
+                r.encoding = site_cfg["encoding"]
         except Exception as e:
             _log.warning("  [!] %s pag %s: erro ao baixar (%s)", nome, p, e)
             diagnostico["status"] = "erro_http"
@@ -241,6 +246,9 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
                 continue
             if not link or link in vistos:
                 continue
+            exige = site_cfg.get("url_deve_conter")      # ex.: "-Sao-Paulo/SP" (descarta outras cidades)
+            if exige and exige not in link:
+                continue
             vistos.add(link)
             novos_na_pagina += 1
 
@@ -260,6 +268,11 @@ def raspar_site(site_cfg, delay=2.0, max_paginas=None, timeout=20, session=None,
             vagas = parse_vagas(_selec(card, sel.get("vagas"))) or parse_vagas(texto_card)
 
             bairro = _selec(card, sel.get("bairro"))
+            padrao = site_cfg.get("bairro_url_regex")   # "sao-paulo-([a-z-]+)$" -> "parque sao domingos"
+            if padrao and not bairro:
+                m_b = re.search(padrao, urlsplit(link).path.rstrip("/"))
+                if m_b:
+                    bairro = m_b.group(1).replace("-", " ").strip()
             seg = site_cfg.get("bairro_url_segmento")   # .../Vila-Sao-Luiz/316691 com -2
             if seg is not None and not bairro:
                 partes = [x for x in urlsplit(link).path.split("/") if x]

@@ -67,6 +67,8 @@ def impressao_digital(html):
                 chave = _classe(node)
                 contagem[chave] += 1
                 exemplo.setdefault(chave, str(node)[:2500])
+                if node.parent is not None:
+                    exemplo.setdefault(chave + " (pai)", str(node.parent)[:2500])
                 break
             node = node.parent
     paginacao = sorted({a["href"] for a in soup.select("a[href]")
@@ -78,6 +80,7 @@ def impressao_digital(html):
     titulo = soup.title.get_text(strip=True) if soup.title else ""
     return {"titulo": titulo, "blocos": contagem.most_common(5),
             "exemplo": exemplo.get(contagem.most_common(1)[0][0]) if contagem else "",
+            "exemplo_pai": exemplo.get(contagem.most_common(1)[0][0] + " (pai)", "") if contagem else "",
             "paginacao": paginacao, "links_venda": [h for h, _ in links.most_common(8)]}
 
 
@@ -89,6 +92,8 @@ def sondar(candidato, config, sess):
             res["status"] = "bloqueado_robots"
             return res
         resposta = _baixar(sess, url, 20, True, tentativas=2)
+        if candidato.get("encoding"):
+            resposta.encoding = candidato["encoding"]
     except Exception as exc:
         res.update(status="erro_http", erro=f"{type(exc).__name__}: {exc}"[:200])
         return res
