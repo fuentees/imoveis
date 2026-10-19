@@ -1113,21 +1113,6 @@ sites:
     titulo: h2
     bairro: p[class*='addressCity']
     area: p[aria-label*='área']
-- nome: Jaraguá Imóveis (destaques)
-  ativo: true
-  base_url: https://www.jaraguaimoveis.com.br
-  listagem_url: https://www.jaraguaimoveis.com.br/
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_apos: ','
-  paginas: 1
-  detalhe: false
-  seletores:
-    card: a[href^='/imovel/']:has(.cx_item_h4)
-    link: a
-    titulo: .cx_item_h4
-    bairro: .cx_item_h4 small
 cidades_monitoradas:
 - São Paulo
 - Itanhaém

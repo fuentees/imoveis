@@ -1,249 +1,37 @@
-# verificação temporária dos blocos finais (Pirituba/Jaraguá/Vila Clarice)
-- nome: Global Imóveis Pirituba - Casas
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.globalimoveispirituba.com.br
-  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=areat+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: casa
-  paginas: 10
-  detalhe: false
+# Fila de candidatas ainda NÃO ativadas (sondadas em 22/09/2026).
+# O workflow descobrir-fontes roda tools/sondar_fontes.py sobre esta lista;
+# quando uma delas extrair preço e área com consistência, mova o bloco para
+# config.example.yaml. Motivo de cada pendência em docs/fontes.md.
+- nome: Morando em Alphaville
+  cidade: Barueri
+  base_url: https://www.morandoemalphaville.com
+  listagem_url: https://www.morandoemalphaville.com/
   seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Global Imóveis Pirituba - Sobrados
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.globalimoveispirituba.com.br
-  listagem_url: https://www.globalimoveispirituba.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=areat+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: sobrado
-  paginas: 10
-  detalhe: false
-  seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Alvará Imóveis Pirituba - Casas
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.alvaraimoveis.com.br
-  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Casa%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=preco+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: casa
-  paginas: 10
-  detalhe: false
-  seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Alvará Imóveis Pirituba - Sobrados
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.alvaraimoveis.com.br
-  listagem_url: https://www.alvaraimoveis.com.br/resultado?selfiltrop=50&filtro=where+categoria+%3D+%27Sobrado%27+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=preco+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: sobrado
-  paginas: 10
-  detalhe: false
-  seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Imobiliária Mutinga - Casas
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.imobiliariamutinga.com.br
-  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Casa%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Casa+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=areat+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: casa
-  paginas: 10
-  detalhe: false
-  seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Imobiliária Mutinga - Sobrados
-  ativo: true
-  plataforma: resultado_asp
-  base_url: https://www.imobiliariamutinga.com.br
-  listagem_url: https://www.imobiliariamutinga.com.br/resultado/?selfiltrop=30&filtro=where+categoria+%3D+%40Sobrado%40+and+liberar+%3D+1+and+liberar+%3D+1+and+liberar+%3D+1&PagAtual={page}&VarPagMax=5&NumPagMax=5&refino=Sobrado+para+venda+e+loca%E7%E3o&Submit={page}&Ordem=areat+desc&string_busca=&campo_busca=
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  url_deve_conter: -Sao-Paulo/SP
-  encoding: windows-1252
-  bairro_apos: ' - '
-  tipo_padrao: sobrado
-  paginas: 10
-  detalhe: false
-  seletores:
-    card: div.col-md-8:has(a[href*='detalhes-do-imovel'])
-    link: a[href*='detalhes-do-imovel']
-    titulo: h4
-    bairro: h3
-  cidade_auto: false
-  detalhar: true
-- nome: Lopes - Pirituba (casas)
-  ativo: true
-  base_url: https://www.lopes.com.br
-  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/pirituba/tipo/casa/pagina/{page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_url_regex: sao-paulo-([a-z-]+)$
-  tipo_padrao: casa
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div.card:has(a[href^='/imovel/'])
-    link: a[href^='/imovel/']
-  cidade_auto: false
-  detalhar: true
-- nome: Lopes - Vila Clarice (casas)
-  ativo: true
-  base_url: https://www.lopes.com.br
-  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/vila-clarice/tipo/casa/pagina/{page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_url_regex: sao-paulo-([a-z-]+)$
-  tipo_padrao: casa
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div.card:has(a[href^='/imovel/'])
-    link: a[href^='/imovel/']
-  cidade_auto: false
-  detalhar: true
-- nome: Lopes - Jaraguá (casas)
-  ativo: true
-  base_url: https://www.lopes.com.br
-  listagem_url: https://www.lopes.com.br/busca/venda/br/sp/sao-paulo/jaragua/tipo/casa/pagina/{page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_url_regex: sao-paulo-([a-z-]+)$
-  tipo_padrao: casa
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div.card:has(a[href^='/imovel/'])
-    link: a[href^='/imovel/']
-  cidade_auto: false
-  detalhar: true
-- nome: Chaves na Mão - Pirituba (casas)
-  ativo: true
-  base_url: https://www.chavesnamao.com.br
-  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/pirituba/?pg={page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div[id^='rc-']
-    link: a[class*='link_rawLink']
-    titulo: h2
-    bairro: p[class*='addressCity']
-    area: p[aria-label*='área']
-  cidade_auto: false
-  detalhar: true
-- nome: Chaves na Mão - Vila Clarice (casas)
-  ativo: true
-  base_url: https://www.chavesnamao.com.br
-  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/vila-clarice/?pg={page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div[id^='rc-']
-    link: a[class*='link_rawLink']
-    titulo: h2
-    bairro: p[class*='addressCity']
-    area: p[aria-label*='área']
-  cidade_auto: false
-  detalhar: true
-- nome: Chaves na Mão - Jaraguá (casas)
-  ativo: true
-  base_url: https://www.chavesnamao.com.br
-  listagem_url: https://www.chavesnamao.com.br/casas-a-venda/sp-sao-paulo/jaragua/?pg={page}
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  paginas: 8
-  pular_param_pagina_1: true
-  detalhe: false
-  seletores:
-    card: div[id^='rc-']
-    link: a[class*='link_rawLink']
-    titulo: h2
-    bairro: p[class*='addressCity']
-    area: p[aria-label*='área']
-  cidade_auto: false
-  detalhar: true
-- nome: Jaraguá Imóveis (destaques)
-  ativo: true
-  base_url: https://www.jaraguaimoveis.com.br
-  listagem_url: https://www.jaraguaimoveis.com.br/
-  cidade: São Paulo
-  cidades_permitidas:
-  - São Paulo
-  bairro_apos: ','
-  paginas: 1
-  detalhe: false
-  seletores:
-    card: a[href^='/imovel/']:has(.cx_item_h4)
+    card: a.destaquecard
     link: a
-    titulo: .cx_item_h4
-    bairro: .cx_item_h4 small
-  cidade_auto: false
-  detalhar: true
+    titulo: .destaquecard__name
+    bairro: .destaquecard__location
+    descricao: .destaquecard__description
+- nome: Achei Morumbi
+  cidade: São Paulo
+  base_url: https://acheimorumbi.com.br
+  listagem_url: https://acheimorumbi.com.br/imoveis
+  seletores:
+    card: a.property-card
+    link: a
+    titulo: .property-card-type
+    bairro: .property-card-location
+    area: .property-card-spec
+- nome: Betta Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://bettaimoveisalphaville.com.br
+  listagem_url: https://bettaimoveisalphaville.com.br/imoveis/comprar/pag-{page}
+  pular_param_pagina_1: true
+- nome: Lopes Maber - Morumbi
+  cidade: São Paulo
+  base_url: https://www.maber.com.br
+  listagem_url: https://www.maber.com.br/imoveis/venda/sp/sao-paulo/morumbi/
+- nome: Melhores Imóveis - Alphaville
+  cidade: Barueri
+  base_url: https://melhoresimoveis.com.br
+  listagem_url: https://melhoresimoveis.com.br/
